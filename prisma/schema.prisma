@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Genero {
+  MASCULINO
+  FEMININO
+  INFANTIL_MASCULINO
+  INFANTIL_FEMININO
+}
+
+enum Modelo {
+  TENIS
+  SAPATENIS
+  SANDALIA
+  RASTEIRA
+  TAMANCO
+  SCARPIN
+  BOTA
+  CHINELO
+  MOCASSIM
+  OXFORD
+  PEEPTOE
+  SLINGBACK
+  CHUTEIRA
+}
+
+model Produto {
+  id         Int      @id @default(autoincrement())
+  nome       String
+  tamanho    Int
+  referencia String
+  cor        String
+  quantidade Int
+  preco      Float
+  genero     Genero
+  modelo     Modelo
+  marca      String
+  disponivel Boolean  @default(true)
+  criadoEm   DateTime @default(now())
+  vendas     Venda[]  // Relação com as vendas
+
+  @@index([nome, referencia])
+}
+
+model Venda {
+  id          Int      @id @default(autoincrement())
+  produtoId   Int
+  quantidade  Int
+  precoVenda  Float
+  data        DateTime @default(now())
+  observacao  String?  // Opcional, para notas como "Venda para cliente X"
+  produto     Produto  @relation(fields: [produtoId], references: [id])
+
+  @@index([produtoId, data])
+}
