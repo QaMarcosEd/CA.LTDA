@@ -138,3 +138,15 @@ export async function getVendasPorProduto(produtoId) {
     return { status: 500, data: { error: 'Erro ao listar vendas', details: error.message } };
   }
 }
+
+export async function getProdutoById(id) {
+  try {
+    const produto = await prisma.produto.findUnique({
+      where: { id },
+    })
+    return produto
+  } catch (error) {
+    console.error('Erro no controller getProdutoById:', error)
+    throw error
+  }
+}

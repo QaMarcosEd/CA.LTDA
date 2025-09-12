@@ -9,30 +9,32 @@ export default function Editar() {
   const { id } = useParams();
 
 useEffect(() => {
-  fetch('/api/produtos')
-    .then(res => res.json())
-    .then(data => {
-      const produto = data.find(p => p.id === parseInt(id));
-      if (!produto) {
-        console.error('Produto não encontrado para o ID:', id);
-        return;
-      }
-      const newForm = {
-        nome: produto.nome,
-        tamanho: produto.tamanho.toString(),
-        referencia: produto.referencia || '',
-        cor: produto.cor,
-        quantidade: produto.quantidade.toString(),
-        preco: produto.preco.toString(),
-        genero: produto.genero || '',
-        modelo: produto.modelo || '',
-        marca: produto.marca || '',
-        disponivel: produto.disponivel,
-      };
-      setForm(newForm);
-      console.log('Form preenchido:', newForm); // Log pra verificar o que foi preenchido
-    });
-}, [id]);
+  if (id) {
+    fetch(`/api/produtos/${id}`)
+      .then(res => res.json())
+      .then(produto => {
+        if (!produto || produto.error) {
+          console.error('Produto não encontrado para o ID:', id)
+          return
+        }
+        // aqui atualiza o form inteiro de uma vez
+        setForm({
+          nome: produto.nome || '',
+          tamanho: produto.tamanho || '',
+          referencia: produto.referencia || '',
+          cor: produto.cor || '',
+          quantidade: produto.quantidade || '',
+          preco: produto.preco || '',
+          genero: produto.genero || '',
+          modelo: produto.modelo || '',
+          marca: produto.marca || '',
+          disponivel: produto.quantidade > 0
+        })
+      })
+      .catch(err => console.error('Erro ao carregar produto:', err))
+  }
+}, [id])
+
 
 const handleSubmit = async (e) => {
   e.preventDefault();
@@ -171,6 +173,14 @@ const handleSubmit = async (e) => {
             className="bg-green-600 text-white px-4 py-3 rounded-lg w-full font-medium hover:bg-green-500 active:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-200"
           >
             Atualizar
+          </button>
+
+           <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="bg-red-600 text-white px-4 py-3 rounded-lg w-full font-medium hover:bg-red-500 active:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-200"
+          >
+            Cancelar
           </button>
         </form>
       </div>

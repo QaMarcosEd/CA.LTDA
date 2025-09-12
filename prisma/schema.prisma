@@ -24,9 +24,7 @@ enum Modelo {
   BOTA
   CHINELO
   MOCASSIM
-  OXFORD
-  PEEPTOE
-  SLINGBACK
+  PAPETE
   CHUTEIRA
 }
 
