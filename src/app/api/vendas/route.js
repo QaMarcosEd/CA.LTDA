@@ -1,10 +1,11 @@
-import { createVenda, getVendasPorProduto, getTodasAsVendas } from '../produtos/controller/controller';
+import { createVenda, getVendasPorProduto, getTodasAsVendas } from '../vendas/controller/vendasController';
 
 export async function POST(request) {
   const data = await request.json();
   const result = await createVenda(data);
   return new Response(JSON.stringify(result.data), { status: result.status });
 }
+
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -14,7 +15,7 @@ export async function GET(request) {
   if (produtoId) {
     result = await getVendasPorProduto(produtoId);
   } else {
-    result = await getTodasAsVendas(); // 🔹 nova função no controller
+    result = await getTodasAsVendas();
   }
 
   return new Response(JSON.stringify(result.data), { status: result.status });

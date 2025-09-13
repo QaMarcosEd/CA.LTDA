@@ -1,4 +1,4 @@
-import { getAllProdutos, createProduto, updateProduto, deleteProduto } from '../produtos/controller/controller';
+import { getAllProdutos, createProduto, updateProduto, deleteProduto } from './controller/produtosController';
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 

@@ -1,6 +1,6 @@
 // src/app/api/produtos/[id]/route.js
 import { NextResponse } from 'next/server'
-import { getProdutoById } from '../controller/controller'
+import { getProdutoById } from '../controller/produtosController'
 
 export async function GET(req, { params }) {
   try {

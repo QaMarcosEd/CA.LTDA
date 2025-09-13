@@ -92,53 +92,6 @@ export async function deleteProduto(id) {
   }
 }
 
-// CRIAR VENDA
-export async function createVenda(data) {
-  try {
-    const { produtoId, quantidade, observacao } = data;
-    const produto = await prisma.produto.findUnique({ where: { id: parseInt(produtoId) } });
-
-    if(!produto) return { status: 404, data: { error: 'Produto não encontrado' } };
-    if(produto.quantidade < quantidade) return { status: 400, data: { error: 'Estoque insuficiente' } };
-
-    const venda = await prisma.venda.create({
-      data: {
-        produtoId: parseInt(produtoId),
-        quantidade: parseInt(quantidade),
-        precoVenda: parseFloat(produto.preco),
-        observacao: observacao || null
-      }
-    });
-
-    await prisma.produto.update({
-      where: { id: parseInt(produtoId) },
-      data: {
-        quantidade: produto.quantidade - quantidade,
-        disponivel: produto.quantidade - quantidade > 0
-      }
-    });
-
-    return { status: 201, data: venda };
-  } catch (error) {
-    console.error('Erro ao registrar venda:', error);
-    return { status: 500, data: { error: 'Erro ao registrar venda', details: error.message } };
-  }
-}
-
-// LISTAR VENDAS POR PRODUTO
-export async function getVendasPorProduto(produtoId) {
-  try {
-    const vendas = await prisma.venda.findMany({
-      where: { produtoId: parseInt(produtoId) },
-      orderBy: { data: 'desc' }
-    });
-    return { status: 200, data: vendas };
-  } catch (error) {
-    console.error('Erro ao listar vendas:', error);
-    return { status: 500, data: { error: 'Erro ao listar vendas', details: error.message } };
-  }
-}
-
 export async function getProdutoById(id) {
   try {
     const produto = await prisma.produto.findUnique({
@@ -150,3 +103,4 @@ export async function getProdutoById(id) {
     throw error
   }
 }
+

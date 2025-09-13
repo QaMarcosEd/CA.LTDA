@@ -20,13 +20,12 @@ CREATE TABLE "Venda" (
     "produtoId" INTEGER NOT NULL,
     "quantidade" INTEGER NOT NULL,
     "precoVenda" REAL NOT NULL,
-    "data" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "valorPago" REAL NOT NULL,
+    "nomeCliente" TEXT NOT NULL,
     "observacao" TEXT,
+    "data" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "Venda_produtoId_fkey" FOREIGN KEY ("produtoId") REFERENCES "Produto" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 -- CreateIndex
 CREATE INDEX "Produto_nome_referencia_idx" ON "Produto"("nome", "referencia");
-
--- CreateIndex
-CREATE INDEX "Venda_produtoId_data_idx" ON "Venda"("produtoId", "data");

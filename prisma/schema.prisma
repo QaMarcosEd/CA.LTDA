@@ -50,10 +50,12 @@ model Venda {
   id          Int      @id @default(autoincrement())
   produtoId   Int
   quantidade  Int
-  precoVenda  Float
+  precoVenda  Float         // preço do produto no momento da venda
+  valorPago   Float         // valor realmente pago pelo cliente
+  nomeCliente String        // nome do comprador
+  observacao  String?
   data        DateTime @default(now())
-  observacao  String?  // Opcional, para notas como "Venda para cliente X"
-  produto     Produto  @relation(fields: [produtoId], references: [id])
 
-  @@index([produtoId, data])
+  produto     Produto  @relation(fields: [produtoId], references: [id])
+  
 }
