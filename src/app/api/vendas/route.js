@@ -1,4 +1,4 @@
-import { createVenda, getVendasPorProduto } from '../produtos/controller/controller';
+import { createVenda, getVendasPorProduto, getTodasAsVendas } from '../produtos/controller/controller';
 
 export async function POST(request) {
   const data = await request.json();
@@ -9,9 +9,13 @@ export async function POST(request) {
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const produtoId = searchParams.get('produtoId');
-  if (!produtoId) {
-    return new Response(JSON.stringify({ error: 'Produto ID é obrigatório' }), { status: 400 });
+
+  let result;
+  if (produtoId) {
+    result = await getVendasPorProduto(produtoId);
+  } else {
+    result = await getTodasAsVendas(); // 🔹 nova função no controller
   }
-  const result = await getVendasPorProduto(produtoId);
+
   return new Response(JSON.stringify(result.data), { status: result.status });
 }
