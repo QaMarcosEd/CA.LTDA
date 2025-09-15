@@ -2,27 +2,26 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 // LISTAR PRODUTOS COM FILTROS E PAGINAÇÃO
-export async function getAllProdutos({ marca, tamanho, referencia, page = 1, limit = 20 } = {}) {
-  try {
-    const where = {};
-    if (marca) where.marca = marca;
-    if (tamanho) where.tamanho = parseInt(tamanho);
-    if (referencia) where.referencia = referencia;
+export async function getAllProdutos({ marca, modelo, genero, tamanho, page = 1, limit = 10 }) {
+  const where = {};
 
-    const total = await prisma.produto.count({ where });
-    const produtos = await prisma.produto.findMany({
-      where,
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: { criadoEm: 'desc' }
-    });
+  if (marca) where.marca = { contains: marca, mode: 'insensitive' };
+  if (modelo) where.modelo = modelo;
+  if (genero) where.genero = genero;
+  if (tamanho) where.tamanho = tamanho;
 
-    return { status: 200, data: produtos, totalPages: Math.ceil(total / limit) };
-  } catch (error) {
-    console.error('Erro ao listar produtos:', error);
-    return { status: 500, data: [], totalPages: 0, error: error.message };
-  }
+  const total = await prisma.produto.count({ where });
+
+  const produtos = await prisma.produto.findMany({
+    where,
+    skip: (page - 1) * limit,
+    take: limit,
+    orderBy: { id: 'asc' },
+  });
+
+  return { data: produtos, totalPages: Math.ceil(total / limit) };
 }
+
 
 // CRIAR PRODUTO
 export async function createProduto(data) {

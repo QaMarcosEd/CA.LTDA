@@ -6,14 +6,27 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const marca = searchParams.get('marca') || undefined;
+    const modelo = searchParams.get('modelo') || undefined;
+    const genero = searchParams.get('genero') || undefined;
     const tamanho = searchParams.get('tamanho') ? parseInt(searchParams.get('tamanho')) : undefined;
-    const referencia = searchParams.get('referencia') || undefined;
     const page = searchParams.get('page') ? parseInt(searchParams.get('page')) : 1;
-    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')) : 20;
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')) : 10;
 
-    const result = await getAllProdutos({ marca, tamanho, referencia, page, limit });
+    const where = {};
+    if (marca) where.marca = marca;
+    if (modelo) where.modelo = modelo;
+    if (genero) where.genero = genero;
+    if (tamanho) where.tamanho = tamanho;
 
-    return new Response(JSON.stringify(result), { status: result.status });
+    const total = await prisma.produto.count({ where });
+    const produtos = await prisma.produto.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { id: 'desc' },
+    });
+
+    return new Response(JSON.stringify({ data: produtos, totalPages: Math.ceil(total / limit) }), { status: 200 });
   } catch (error) {
     console.error(error);
     return new Response(JSON.stringify({ error: 'Erro ao buscar produtos' }), { status: 500 });

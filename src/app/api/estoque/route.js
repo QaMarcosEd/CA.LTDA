@@ -1,65 +1,51 @@
+// /api/estoque/route.js
 import { PrismaClient } from '@prisma/client';
-
 const prisma = new PrismaClient();
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
-  const tipo = searchParams.get('tipo'); // Tipo de agrupamento: 'genero', 'modelo', 'marca'
+  const tipo = searchParams.get('tipo');
+
+  // Novos filtros
+  const genero = searchParams.get('genero');
+  const marca = searchParams.get('marca');
+  const modelo = searchParams.get('modelo');
+  const numeracao = searchParams.get('numeracao');
 
   try {
     let resultado = [];
 
     switch (tipo) {
       case 'genero':
-        const contagemPorGenero = await prisma.produto.groupBy({
-          by: ['genero'],
-          _sum: {
-            quantidade: true,
-          },
-          where: {
-            disponivel: true,
-          },
-        });
-        resultado = contagemPorGenero.map((item) => ({
-          genero: item.genero || 'Sem gênero',
-          total: item._sum.quantidade || 0,
-        }));
-        break;
-
       case 'modelo':
-        const contagemPorModelo = await prisma.produto.groupBy({
-          by: ['modelo'],
-          _sum: {
-            quantidade: true,
-          },
-          where: {
-            disponivel: true,
-          },
+      case 'marca':
+        const groupByField = tipo;
+        const contagem = await prisma.produto.groupBy({
+          by: [groupByField],
+          _sum: { quantidade: true },
+          where: { disponivel: true },
         });
-        resultado = contagemPorModelo.map((item) => ({
-          modelo: item.modelo || 'Sem modelo',
+        resultado = contagem.map((item) => ({
+          [groupByField]: item[groupByField] || `Sem ${groupByField}`,
           total: item._sum.quantidade || 0,
         }));
         break;
 
-      case 'marca':
-        const contagemPorMarca = await prisma.produto.groupBy({
-          by: ['marca'],
-          _sum: {
-            quantidade: true,
-          },
+      case 'produtos': // 🔥 novo caso: busca filtrada
+        resultado = await prisma.produto.findMany({
           where: {
             disponivel: true,
+            genero: genero || undefined,
+            marca: marca || undefined,
+            modelo: modelo || undefined,
+            numeracao: numeracao ? parseInt(numeracao) : undefined,
           },
+          orderBy: { nome: 'asc' },
         });
-        resultado = contagemPorMarca.map((item) => ({
-          marca: item.marca || 'Sem marca',
-          total: item._sum.quantidade || 0,
-        }));
         break;
 
       default:
-        return new Response(JSON.stringify({ error: 'Tipo de agrupamento inválido. Use "genero", "modelo" ou "marca".' }), {
+        return new Response(JSON.stringify({ error: 'Tipo inválido.' }), {
           status: 400,
           headers: { 'Content-Type': 'application/json' },
         });
@@ -70,8 +56,8 @@ export async function GET(request) {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error(`Erro ao buscar contagem por ${tipo}:`, error);
-    return new Response(JSON.stringify({ error: `Erro ao buscar contagem por ${tipo}` }), {
+    console.error(error);
+    return new Response(JSON.stringify({ error: 'Erro ao buscar dados.' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
