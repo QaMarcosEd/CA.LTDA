@@ -121,19 +121,21 @@ export default function Home() {
     setSelectedProduto(null);
   };
 
-  // Enviar venda
-  const handleSubmitVenda = async ({ produtoId, quantidade, nomeCliente, valorPago }) => {
+  // pages/index.js (ou onde está sua Home)
+  const handleSubmitVenda = async ({ produtoId, quantidade, clienteNome, valorPago }) => {
     const response = await fetch('/api/vendas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ produtoId, quantidade, nomeCliente, valorPago }),
+      body: JSON.stringify({ produtoId, quantidade, clienteNome, valorPago }),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      return alert(errorData.error || 'Erro ao registrar venda');
+      toast.error(errorData.error || 'Erro ao registrar venda ❌');
+      return;
     }
 
+    toast.success('Venda registrada com sucesso! ✅');
     fetchProdutos(); // atualizar estoque
     handleCloseModal();
   };
@@ -209,6 +211,15 @@ export default function Home() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
             Ver Vendas
+          </Link>
+          <Link
+            href="/clientes"
+            className="inline-flex items-center justify-center bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors font-poppins text-sm font-medium"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            Ver Clientes
           </Link>
         </div>
 

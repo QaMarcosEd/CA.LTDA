@@ -41,7 +41,7 @@ model Produto {
   marca      String
   disponivel Boolean  @default(true)
   criadoEm   DateTime @default(now())
-  vendas     Venda[]  // Relação com as vendas
+  vendas     Venda[]
 
   @@index([nome, referencia])
 }
@@ -50,12 +50,21 @@ model Venda {
   id          Int      @id @default(autoincrement())
   produtoId   Int
   quantidade  Int
-  precoVenda  Float         // preço do produto no momento da venda
-  valorPago   Float         // valor realmente pago pelo cliente
-  nomeCliente String        // nome do comprador
+  precoVenda  Float
+  valorPago   Float
+  clienteId   Int           // Substitui nomeCliente
   observacao  String?
   data        DateTime @default(now())
 
   produto     Produto  @relation(fields: [produtoId], references: [id])
-  
+  cliente     Cliente  @relation(fields: [clienteId], references: [id])
+}
+
+model Cliente {
+  id        Int      @id @default(autoincrement())
+  nome      String   @unique
+  apelido   String?  // Substitui email
+  telefone  String?  // Mantém como opcional
+  criadoEm  DateTime @default(now())
+  vendas    Venda[]
 }
