@@ -1,35 +1,49 @@
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+import { PrismaClient } from '@prisma/client'
+const prisma = new PrismaClient()
 
-// LISTAR PRODUTOS COM FILTROS E PAGINAÇÃO
+
+
 export async function getAllProdutos({ marca, modelo, genero, tamanho, page = 1, limit = 10 }) {
-  const where = {};
+  try {
+    const where = {};
+    if (marca) where.marca = marca;
+    if (modelo) where.modelo = modelo;
+    if (genero) where.genero = genero;
+    if (tamanho) where.tamanho = tamanho;
 
-  if (marca) where.marca = { contains: marca, mode: 'insensitive' };
-  if (modelo) where.modelo = modelo;
-  if (genero) where.genero = genero;
-  if (tamanho) where.tamanho = tamanho;
+    const total = await prisma.produto.count({ where });
+    const produtos = await prisma.produto.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { id: 'desc' },
+    });
 
-  const total = await prisma.produto.count({ where });
-
-  const produtos = await prisma.produto.findMany({
-    where,
-    skip: (page - 1) * limit,
-    take: limit,
-    orderBy: { id: 'asc' },
-  });
-
-  return { data: produtos, totalPages: Math.ceil(total / limit) };
+    return {
+      data: produtos,
+      totalPages: Math.ceil(total / limit),
+    };
+  } catch (error) {
+    console.error(error);
+    throw new Error('Erro ao buscar produtos');
+  }
 }
 
 
-// CRIAR PRODUTO
+// CREATE: insere novo produto no banco
 export async function createProduto(data) {
   try {
-    const camposObrigatorios = ['nome','tamanho','referencia','cor','quantidade','preco','genero','modelo','marca'];
-    const faltando = camposObrigatorios.filter(c => !data[c]);
-    if(faltando.length) return { status: 400, data: { error: `Campos obrigatórios faltando: ${faltando.join(', ')}` } };
+    // Validação de campos obrigatórios
+    const camposObrigatorios = ['nome','tamanho','referencia','cor','quantidade','preco','genero','modelo','marca']
+    const faltando = camposObrigatorios.filter(c => !data[c])
+    if (faltando.length) {
+      return { 
+        status: 400, 
+        data: { error: `Campos obrigatórios faltando: ${faltando.join(', ')}` } 
+      }
+    }
 
+    // Criação no banco
     const produto = await prisma.produto.create({
       data: {
         nome: data.nome,
@@ -41,22 +55,23 @@ export async function createProduto(data) {
         genero: data.genero,
         modelo: data.modelo,
         marca: data.marca,
-        disponivel: parseInt(data.quantidade) > 0
+        disponivel: parseInt(data.quantidade) > 0 // flag de disponibilidade
       }
-    });
-    return { status: 201, data: produto };
+    })
+
+    return { status: 201, data: produto }
   } catch (error) {
-    console.error('Erro ao criar produto:', error);
-    return { status: 500, data: { error: 'Erro ao criar produto', details: error.message } };
+    console.error('Erro ao criar produto:', error)
+    return { status: 500, data: { error: 'Erro ao criar produto', details: error.message } }
   }
 }
 
-// ATUALIZAR PRODUTO
+// UPDATE: atualiza dados de um produto existente
 export async function updateProduto(data) {
   try {
-    const id = parseInt(data.id);
-    const quantidade = parseInt(data.quantidade);
-    const preco = parseFloat(data.preco);
+    const id = parseInt(data.id)
+    const quantidade = parseInt(data.quantidade)
+    const preco = parseFloat(data.preco)
 
     const produto = await prisma.produto.update({
       where: { id },
@@ -72,31 +87,34 @@ export async function updateProduto(data) {
         marca: data.marca,
         disponivel: quantidade > 0
       }
-    });
-    return { status: 200, data: produto };
+    })
+
+    return { status: 200, data: produto }
   } catch (error) {
-    console.error('Erro ao atualizar produto:', error);
-    return { status: 500, data: { error: 'Erro ao atualizar produto', details: error.message } };
+    console.error('Erro ao atualizar produto:', error)
+    return { status: 500, data: { error: 'Erro ao atualizar produto', details: error.message } }
   }
 }
 
-// DELETAR PRODUTO
+// // DELETE: remove produto pelo ID
 export async function deleteProduto(id) {
   try {
     await prisma.produto.delete({ where: { id: parseInt(id) } });
-    return { status: 200, data: { message: 'Produto deletado' } };
+    return { status: 200, data: { message: 'Produto deletado com sucesso' } };
   } catch (error) {
     console.error('Erro ao deletar produto:', error);
+    if (error.code === 'P2003') {
+      // Foreign key constraint violation
+      return { status: 409, data: { error: 'Não é possível deletar o produto porque ele está vinculado a uma venda.' } };
+    }
     return { status: 500, data: { error: 'Erro ao deletar produto', details: error.message } };
   }
 }
 
+// GET BY ID: busca produto único pelo ID
 export async function getProdutoById(id) {
   try {
-    const produto = await prisma.produto.findUnique({
-      where: { id },
-    })
-    return produto
+    return await prisma.produto.findUnique({ where: { id } })
   } catch (error) {
     console.error('Erro no controller getProdutoById:', error)
     throw error
