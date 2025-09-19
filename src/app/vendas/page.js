@@ -9,6 +9,8 @@ export default function Vendas() {
   const [vendas, setVendas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedVenda, setSelectedVenda] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchVendas = async () => {
@@ -16,7 +18,7 @@ export default function Vendas() {
         const res = await fetch('/api/vendas');
         if (!res.ok) throw new Error('Erro ao buscar vendas');
         const data = await res.json();
-        console.log('Dados recebidos de /api/vendas:', data); // Para depuração
+        console.log('Dados recebidos de /api/vendas:', data); // Depuração
         setVendas(data);
       } catch (error) {
         console.error('Erro no fetchVendas:', error);
@@ -27,6 +29,88 @@ export default function Vendas() {
     };
     fetchVendas();
   }, []);
+
+  const getStatusVenda = (venda) => {
+    console.log('Verificando status da venda:', venda); // Depuração
+    if (!venda.parcelas || venda.parcelas.length === 0) return 'Quitado';
+    const parcelasPagas = venda.parcelas.filter((p) => p.pago).length;
+    return `Parcelado (${parcelasPagas}/${venda.parcelas.length} pagas)`;
+  };
+
+  const getValorPago = (venda) => {
+    const entrada = parseFloat(venda.entrada) || 0;
+    if (!venda.parcelas || venda.parcelas.length === 0) return entrada.toFixed(2);
+    return (entrada + venda.parcelas.reduce((sum, p) => sum + parseFloat(p.valorPago || 0), 0)).toFixed(2);
+  };
+
+  const openParcelasModal = (venda) => {
+    setSelectedVenda(venda);
+    setIsModalOpen(true);
+  };
+
+  const closeParcelasModal = () => {
+    setSelectedVenda(null);
+    setIsModalOpen(false);
+  };
+
+  const marcarParcelaComoPaga = async (parcelaId, novoValorPago, observacao) => {
+    try {
+      const valor = parseFloat(novoValorPago);
+      const parcela = selectedVenda.parcelas.find((p) => p.id === parcelaId);
+      if (!parcela) throw new Error('Parcela não encontrada');
+      if (valor <= 0) throw new Error('Valor pago deve ser maior que zero');
+
+      const valorPagoExistente = parseFloat(parcela.valorPago || 0);
+      const valorPendente = parseFloat(parcela.valor) - valorPagoExistente;
+      if (valor > valorPendente) {
+        throw new Error(`Valor pago (R$ ${valor.toFixed(2)}) não pode exceder o valor pendente (R$ ${valorPendente.toFixed(2)})`);
+      }
+
+      const novoValorPagoTotal = valorPagoExistente + valor;
+      const isPago = novoValorPagoTotal >= parseFloat(parcela.valor) - 0.01; // Tolerância pra erros de arredondamento
+
+      const res = await fetch(`/api/parcelas/${parcelaId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          incrementoValorPago: valor.toFixed(2), // Enviar como incremento
+          observacao,
+          pago: isPago,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Erro ao marcar parcela como paga');
+      }
+
+      const updatedParcela = await res.json();
+      // Atualizar vendas
+      setVendas((prevVendas) =>
+        prevVendas.map((venda) =>
+          venda.id === selectedVenda.id
+            ? {
+                ...venda,
+                parcelas: venda.parcelas.map((p) =>
+                  p.id === parcelaId ? { ...p, ...updatedParcela } : p
+                ),
+              }
+            : venda
+        )
+      );
+      // Atualizar selectedVenda pra refletir no modal
+      setSelectedVenda((prev) => ({
+        ...prev,
+        parcelas: prev.parcelas.map((p) =>
+          p.id === parcelaId ? { ...p, ...updatedParcela } : p
+        ),
+      }));
+      toast.success('Parcela atualizada com sucesso! ✅');
+    } catch (error) {
+      console.error('Erro ao marcar parcela:', error);
+      toast.error(error.message || 'Erro ao marcar parcela');
+    }
+  };
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -50,7 +134,7 @@ export default function Vendas() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-100">
               <tr>
-                {['ID', 'Produto', 'Quantidade', 'Valor Pago', 'Cliente', 'Data'].map((title) => (
+                {['ID', 'Produto', 'Quantidade', 'Valor Pago', 'Valor Total', 'Cliente', 'Data', 'Status', 'Ações'].map((title) => (
                   <th
                     key={title}
                     className="px-4 py-3 text-left text-xs font-semibold font-poppins text-gray-600 uppercase tracking-wider"
@@ -67,7 +151,8 @@ export default function Vendas() {
                     <td className="px-4 py-3 text-sm font-poppins text-gray-900">{v.id}</td>
                     <td className="px-4 py-3 text-sm font-poppins text-gray-900">{v.produto?.nome || 'N/A'}</td>
                     <td className="px-4 py-3 text-sm font-poppins text-gray-900">{v.quantidade}</td>
-                    <td className="px-4 py-3 text-sm font-poppins text-gray-900">R$ {v.valorPago.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-sm font-poppins text-gray-900">R$ {getValorPago(v)}</td>
+                    <td className="px-4 py-3 text-sm font-poppins text-gray-900">R$ {v.valorTotal.toFixed(2)}</td>
                     <td className="px-4 py-3 text-sm font-poppins text-gray-900">{v.cliente?.nome || 'N/A'}</td>
                     <td className="px-4 py-3 text-sm font-poppins text-gray-900">
                       {new Date(v.data).toLocaleString('pt-BR', {
@@ -75,11 +160,22 @@ export default function Vendas() {
                         timeStyle: 'short',
                       })}
                     </td>
+                    <td className="px-4 py-3 text-sm font-poppins text-gray-900">{getStatusVenda(v)}</td>
+                    <td className="px-4 py-3 text-sm font-poppins text-gray-900">
+                      {v.parcelas && v.parcelas.length > 0 && (
+                        <button
+                          onClick={() => openParcelasModal(v)}
+                          className="text-blue-600 hover:text-blue-800 font-poppins text-sm"
+                        >
+                          Ver Parcelas
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="px-4 py-4 text-center text-sm font-poppins text-gray-500">
+                  <td colSpan="9" className="px-4 py-4 text-center text-sm font-poppins text-gray-500">
                     Nenhuma venda encontrada.
                   </td>
                 </tr>
@@ -87,6 +183,81 @@ export default function Vendas() {
             </tbody>
           </table>
         </div>
+
+        {/* Modal de Parcelas */}
+        {isModalOpen && selectedVenda && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-lg">
+              <h2 className="text-xl font-bold font-poppins text-gray-900 mb-4">
+                Parcelas da Venda #{selectedVenda.id}
+              </h2>
+              <p className="text-sm font-poppins text-gray-600 mb-4">
+                Entrada: R$ {selectedVenda.entrada.toFixed(2)}
+              </p>
+              <div className="space-y-4">
+                {selectedVenda.parcelas.map((parcela) => (
+                  <div key={parcela.id} className="border-b pb-2">
+                    <p className="text-sm font-poppins text-gray-700">
+                      Parcela {parcela.numeroParcela}: R$ {parcela.valor.toFixed(2)} (Vencimento: {new Date(parcela.dataVencimento).toLocaleDateString('pt-BR')})
+                    </p>
+                    <p className="text-sm font-poppins text-gray-700">
+                      Status: {parcela.pago ? 'Pago' : 'Pendente'}
+                    </p>
+                    {parcela.valorPago > 0 && (
+                      <p className="text-sm font-poppins text-gray-700">
+                        Valor Pago: R$ {parcela.valorPago.toFixed(2)}
+                      </p>
+                    )}
+                    {!parcela.pago && (
+                      <div className="mt-2">
+                        <p className="text-sm font-poppins text-gray-700">
+                          Pendente: R$ {(parcela.valor - (parcela.valorPago || 0)).toFixed(2)}
+                        </p>
+                        <div className="flex space-x-2 mt-2">
+                          <input
+                            type="number"
+                            step="0.01"
+                            placeholder="Valor a pagar"
+                            className="border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
+                            id={`valorPago-${parcela.id}`}
+                          />
+                          <input
+                            type="text"
+                            placeholder="Observação (ex: Pago via PIX)"
+                            className="border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
+                            id={`observacao-${parcela.id}`}
+                          />
+                          <button
+                            onClick={() => {
+                              const valorPago = document.getElementById(`valorPago-${parcela.id}`).value;
+                              const observacao = document.getElementById(`observacao-${parcela.id}`).value;
+                              if (!valorPago || parseFloat(valorPago) <= 0) {
+                                toast.error('Digite um valor válido');
+                                return;
+                              }
+                              marcarParcelaComoPaga(parcela.id, valorPago, observacao || null);
+                            }}
+                            className="bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700 font-poppins text-sm"
+                          >
+                            Pagar
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={closeParcelasModal}
+                  className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400 font-poppins text-sm"
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Botão Voltar */}
         <div className="mt-8 flex justify-center">
@@ -104,3 +275,7 @@ export default function Vendas() {
     </div>
   );
 }
+
+
+
+

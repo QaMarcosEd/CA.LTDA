@@ -28,43 +28,53 @@ enum Modelo {
   CHUTEIRA
 }
 
+model Cliente {
+  id           Int      @id @default(autoincrement())
+  nome         String   @unique
+  apelido      String?
+  telefone     String?
+  vendas       Venda[]
+  criadoEm     DateTime @default(now())
+}
+
+model Venda {
+  id           Int      @id @default(autoincrement())
+  produtoId    Int
+  quantidade   Int
+  precoVenda   Float
+  valorTotal   Float
+  entrada      Float    @default(0) // Novo campo para entrada
+  clienteId    Int
+  observacao   String?
+  data         DateTime @default(now())
+  produto      Produto  @relation(fields: [produtoId], references: [id])
+  cliente      Cliente  @relation(fields: [clienteId], references: [id])
+  parcelas     Parcela[]
+}
+
+model Parcela {
+  id             Int      @id @default(autoincrement())
+  vendaId        Int
+  numeroParcela  Int
+  valor          Float
+  valorPago      Float    @default(0)
+  dataVencimento DateTime
+  pago           Boolean  @default(false)
+  observacao     String?
+  venda          Venda    @relation(fields: [vendaId], references: [id])
+}
+
 model Produto {
   id         Int      @id @default(autoincrement())
   nome       String
   tamanho    Int
-  referencia String
+  referencia String?
   cor        String
   quantidade Int
   preco      Float
-  genero     Genero
-  modelo     Modelo
-  marca      String
+  genero     String?
+  modelo     String?
+  marca      String?
   disponivel Boolean  @default(true)
-  criadoEm   DateTime @default(now())
   vendas     Venda[]
-
-  @@index([nome, referencia])
-}
-
-model Venda {
-  id          Int      @id @default(autoincrement())
-  produtoId   Int
-  quantidade  Int
-  precoVenda  Float
-  valorPago   Float
-  clienteId   Int           // Substitui nomeCliente
-  observacao  String?
-  data        DateTime @default(now())
-
-  produto     Produto  @relation(fields: [produtoId], references: [id])
-  cliente     Cliente  @relation(fields: [clienteId], references: [id])
-}
-
-model Cliente {
-  id        Int      @id @default(autoincrement())
-  nome      String   @unique
-  apelido   String?  // Substitui email
-  telefone  String?  // Mantém como opcional
-  criadoEm  DateTime @default(now())
-  vendas    Venda[]
 }

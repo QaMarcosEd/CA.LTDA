@@ -121,23 +121,17 @@ export default function Home() {
     setSelectedProduto(null);
   };
 
-  // pages/index.js (ou onde está sua Home)
-  const handleSubmitVenda = async ({ produtoId, quantidade, clienteNome, valorPago }) => {
+  // Enviar venda
+  const handleSubmitVenda = async (vendaData) => {
+    console.log('Enviando venda:', vendaData); // Depuração
     const response = await fetch('/api/vendas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ produtoId, quantidade, clienteNome, valorPago }),
+      body: JSON.stringify(vendaData),
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      toast.error(errorData.error || 'Erro ao registrar venda ❌');
-      return;
-    }
-
-    toast.success('Venda registrada com sucesso! ✅');
-    fetchProdutos(); // atualizar estoque
-    handleCloseModal();
+    // Retorna a resposta pra ModalVenda verificar
+    return response;
   };
 
   if (loading) return (
@@ -270,7 +264,7 @@ export default function Home() {
                       Editar
                     </Link>
                     <button
-                      onClick={() => handleOpenDeleteModal(p)} // Changed to open modal instead of direct delete
+                      onClick={() => handleOpenDeleteModal(p)}
                       className="text-red-600 hover:text-red-800 font-poppins text-sm font-medium"
                     >
                       Deletar

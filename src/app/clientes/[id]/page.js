@@ -26,6 +26,7 @@ export default function DetalhesCliente() {
         throw new Error(`Erro ao buscar cliente: ${res.status} - ${errorData.error || 'Sem detalhes'}`);
       }
       const data = await res.json();
+      console.log('Cliente retornado:', data); // Depuração
       setCliente(data);
     } catch (error) {
       console.error('Erro ao carregar detalhes:', error);
@@ -33,6 +34,12 @@ export default function DetalhesCliente() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getValorPago = (venda) => {
+    const entrada = parseFloat(venda.entrada) || 0;
+    if (!venda.parcelas || venda.parcelas.length === 0) return entrada.toFixed(2);
+    return (entrada + venda.parcelas.reduce((sum, p) => sum + parseFloat(p.valorPago || 0), 0)).toFixed(2);
   };
 
   if (loading) return (
@@ -52,7 +59,7 @@ export default function DetalhesCliente() {
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold font-poppins text-gray-900 mb-8">Detalhes do Cliente: {cliente.nome}</h1>
 
-        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
+        <div className="bg-white p-6 rounded-lg shadow-md mb-8 text-gray-600">
           <h2 className="text-xl font-semibold font-poppins text-gray-900 mb-4">Informações do Cliente</h2>
           <p><strong>Nome:</strong> {cliente.nome}</p>
           <p><strong>Apelido:</strong> {cliente.apelido || 'N/A'}</p>
@@ -70,6 +77,7 @@ export default function DetalhesCliente() {
                     <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Produto</th>
                     <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Quantidade</th>
                     <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Valor Pago</th>
+                    <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Valor Total</th>
                     <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Data</th>
                   </tr>
                 </thead>
@@ -78,7 +86,8 @@ export default function DetalhesCliente() {
                     <tr key={v.id} className="border-b hover:bg-gray-50">
                       <td className="py-3 px-4 text-sm font-poppins text-gray-800">{v.produto.nome}</td>
                       <td className="py-3 px-4 text-sm font-poppins text-gray-800">{v.quantidade}</td>
-                      <td className="py-3 px-4 text-sm font-poppins text-gray-800">R$ {v.valorPago.toFixed(2)}</td>
+                      <td className="py-3 px-4 text-sm font-poppins text-gray-800">R$ {getValorPago(v)}</td>
+                      <td className="py-3 px-4 text-sm font-poppins text-gray-800">R$ {v.valorTotal.toFixed(2)}</td>
                       <td className="py-3 px-4 text-sm font-poppins text-gray-800">
                         {new Date(v.data).toLocaleDateString('pt-BR')}
                       </td>

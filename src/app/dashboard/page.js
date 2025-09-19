@@ -159,7 +159,7 @@ export default function Dashboard() {
         </div>
 
         {/* Filtros */}
-        <div className="mb-8 bg-white p-4 rounded-lg shadow-md">
+        <div className="mb-8 bg-white p-4 rounded-lg shadow-md text-gray-600">
           <h2 className="text-lg font-semibold font-poppins text-gray-700 mb-4">Filtros</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <input

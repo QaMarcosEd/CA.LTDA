@@ -10,13 +10,16 @@ export default function ModalVenda({ isOpen, onClose, produto, onSubmit }) {
   const [clienteNome, setClienteNome] = useState('');
   const [apelido, setApelido] = useState('');
   const [telefone, setTelefone] = useState('');
-  const [valorPago, setValorPago] = useState('');
+  const [valorTotal, setValorTotal] = useState('');
   const [clientes, setClientes] = useState([]);
   const [isNewCliente, setIsNewCliente] = useState(false);
+  const [isParcelado, setIsParcelado] = useState(false);
+  const [numeroParcelas, setNumeroParcelas] = useState(1);
+  const [entrada, setEntrada] = useState('0.00');
 
   useEffect(() => {
     if (produto) {
-      setValorPago(produto.preco.toFixed(2));
+      setValorTotal(produto.preco.toFixed(2));
     }
     if (isOpen) {
       fetch('/api/clientes', { cache: 'no-store' })
@@ -32,8 +35,18 @@ export default function ModalVenda({ isOpen, onClose, produto, onSubmit }) {
     }
   }, [produto, isOpen]);
 
+  const calcularValorParcela = () => {
+    if (!valorTotal || !numeroParcelas || numeroParcelas <= 0) return 0;
+    const valor = parseFloat(valorTotal) || 0;
+    const entradaValor = parseFloat(entrada) || 0;
+    if (numeroParcelas === 1) return valor - entradaValor;
+    const valorRestante = valor - entradaValor;
+    const valorBaseParcela = Math.floor((valorRestante / numeroParcelas) * 100) / 100;
+    return valorBaseParcela;
+  };
+
   const handleConfirm = async () => {
-    if (!quantidade || quantidade <= 0) {
+    if (!quantidade || parseInt(quantidade) <= 0) {
       toast.error('Digite uma quantidade válida');
       return;
     }
@@ -41,19 +54,34 @@ export default function ModalVenda({ isOpen, onClose, produto, onSubmit }) {
       toast.error('Quantidade maior que o estoque disponível');
       return;
     }
-    if (!clienteNome) {
+    if (!clienteNome && !isNewCliente) {
       toast.error('Selecione ou digite o nome do cliente');
       return;
     }
-    if (!valorPago || valorPago <= 0) {
-      toast.error('Digite o valor pago');
+    if (!valorTotal || parseFloat(valorTotal) <= 0) {
+      toast.error('Digite o valor total');
       return;
+    }
+    if (isParcelado) {
+      const entradaValor = parseFloat(entrada) || 0;
+      if (entradaValor > parseFloat(valorTotal)) {
+        toast.error('A entrada não pode ser maior que o valor total');
+        return;
+      }
+      if (numeroParcelas < 1 || numeroParcelas > 12) {
+        toast.error('Número de parcelas deve ser entre 1 e 12');
+        return;
+      }
     }
 
     try {
       let clienteId;
 
       if (isNewCliente) {
+        if (!clienteNome) {
+          toast.error('Digite o nome do novo cliente');
+          return;
+        }
         const res = await fetch('/api/clientes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -62,8 +90,7 @@ export default function ModalVenda({ isOpen, onClose, produto, onSubmit }) {
 
         if (!res.ok) {
           const errorData = await res.json();
-          toast.error(errorData.error || 'Erro ao criar cliente');
-          return;
+          throw new Error(errorData.error || 'Erro ao criar cliente');
         }
 
         const newCliente = await res.json();
@@ -77,30 +104,48 @@ export default function ModalVenda({ isOpen, onClose, produto, onSubmit }) {
         clienteId = cliente.id;
       }
 
-      onSubmit({
+      const vendaData = {
         produtoId: produto.id,
         quantidade: parseInt(quantidade),
         clienteId,
-        valorPago: parseFloat(valorPago),
-      });
+        clienteNome,
+        valorTotal: parseFloat(valorTotal),
+        isParcelado,
+        numeroParcelas: isParcelado ? parseInt(numeroParcelas) : 1,
+        entrada: isParcelado ? parseFloat(entrada) || 0 : parseFloat(valorTotal),
+      };
+      console.log('Dados enviados pro onSubmit:', vendaData); // Depuração
+      const response = await onSubmit(vendaData);
+      if (!response) {
+        throw new Error('Nenhuma resposta recebida do servidor');
+      }
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao registrar venda');
+      }
 
+      // Limpar estados
       setQuantidade('');
       setClienteNome('');
       setApelido('');
       setTelefone('');
-      setValorPago('');
+      setValorTotal('');
       setIsNewCliente(false);
+      setIsParcelado(false);
+      setNumeroParcelas(1);
+      setEntrada('0.00');
       toast.success('Venda registrada com sucesso! ✅');
+      onClose(); // Fechar modal após sucesso
     } catch (error) {
       console.error('Erro ao registrar venda:', error);
-      toast.error('Erro inesperado ao registrar venda');
+      toast.error(error.message || 'Erro inesperado ao registrar venda');
     }
   };
 
   if (!isOpen || !produto) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 text-gray-600">
       <div className="bg-white rounded-lg p-6 w-full max-w-md">
         <h2 className="text-xl font-bold font-poppins text-gray-900 mb-4">
           Registrar Venda - {produto.nome}
@@ -117,7 +162,7 @@ export default function ModalVenda({ isOpen, onClose, produto, onSubmit }) {
             Quantidade
           </label>
           <input
-            type="text"
+            type="number"
             value={quantidade}
             onChange={(e) => setQuantidade(e.target.value)}
             placeholder="Quantidade a vender"
@@ -187,16 +232,64 @@ export default function ModalVenda({ isOpen, onClose, produto, onSubmit }) {
 
         <div className="mb-4">
           <label className="block text-sm font-medium font-poppins text-gray-700">
-            Valor Pago
+            Valor Total
           </label>
           <input
             type="number"
             step="0.01"
-            value={valorPago}
-            onChange={(e) => setValorPago(e.target.value)}
-            placeholder="Valor pago (R$)"
+            value={valorTotal}
+            onChange={(e) => setValorTotal(e.target.value)}
+            placeholder="Valor total (R$)"
             className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
           />
+        </div>
+
+        <div className="mb-4">
+          <label className="flex items-center text-sm font-medium font-poppins text-gray-700">
+            <input
+              type="checkbox"
+              checked={isParcelado}
+              onChange={(e) => setIsParcelado(e.target.checked)}
+              className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            Pagar em parcelas
+          </label>
+          {isParcelado && (
+            <div className="mt-2 space-y-4">
+              <div>
+                <label className="block text-sm font-medium font-poppins text-gray-700">
+                  Número de Parcelas
+                </label>
+                <select
+                  value={numeroParcelas}
+                  onChange={(e) => setNumeroParcelas(e.target.value)}
+                  className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
+                >
+                  {[...Array(12).keys()].map((i) => (
+                    <option key={i + 1} value={i + 1}>
+                      {i + 1}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium font-poppins text-gray-700">
+                  Entrada (R$)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={entrada}
+                  onChange={(e) => setEntrada(e.target.value)}
+                  placeholder="0.00"
+                  className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
+                />
+              </div>
+              <p className="text-sm font-poppins text-gray-600">
+                Valor por parcela: R$ {calcularValorParcela()}
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end space-x-2">
