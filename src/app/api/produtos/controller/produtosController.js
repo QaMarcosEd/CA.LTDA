@@ -34,13 +34,25 @@ export async function getAllProdutos({ marca, modelo, genero, tamanho, page = 1,
 export async function createProduto(data) {
   try {
     // Validação de campos obrigatórios
-    const camposObrigatorios = ['nome','tamanho','referencia','cor','quantidade','preco','genero','modelo','marca']
-    const faltando = camposObrigatorios.filter(c => !data[c])
+    const camposObrigatorios = ['nome','tamanho','referencia','cor','quantidade','preco','genero','modelo','marca'];
+    const faltando = camposObrigatorios.filter(c => data[c] === undefined || data[c] === null || data[c] === '');
+
     if (faltando.length) {
       return { 
         status: 400, 
         data: { error: `Campos obrigatórios faltando: ${faltando.join(', ')}` } 
-      }
+      };
+    }
+
+    // Validações adicionais
+    if (isNaN(parseInt(data.tamanho)) || parseInt(data.tamanho) <= 0) {
+      return { status: 400, data: { error: 'Tamanho inválido' } };
+    }
+    if (isNaN(parseInt(data.quantidade)) || parseInt(data.quantidade) < 0) {
+      return { status: 400, data: { error: 'Quantidade inválida' } };
+    }
+    if (isNaN(parseFloat(data.preco)) || parseFloat(data.preco) < 0) {
+      return { status: 400, data: { error: 'Preço inválido' } };
     }
 
     // Criação no banco
