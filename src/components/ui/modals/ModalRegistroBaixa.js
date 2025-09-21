@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { formatPhoneNumber } from '../../../utils/formatPhoneNumber';
+import { formatPhoneNumber } from '../../../../utils/formatPhoneNumber';
 
 export default function ModalVenda({ isOpen, onClose, produto, onSubmit }) {
   const [quantidade, setQuantidade] = useState('');
@@ -34,6 +34,15 @@ export default function ModalVenda({ isOpen, onClose, produto, onSubmit }) {
         });
     }
   }, [produto, isOpen]);
+
+  useEffect(() => {
+    if (produto && quantidade) {
+      const qty = parseInt(quantidade, 10);
+      if (!isNaN(qty) && qty > 0) {
+        setValorTotal((produto.preco * qty).toFixed(2));
+      }
+    }
+  }, [quantidade, produto]);
 
   const calcularValorParcela = () => {
     if (!valorTotal || !numeroParcelas || numeroParcelas <= 0) return 0;

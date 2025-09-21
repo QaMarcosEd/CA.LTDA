@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import ModalVenda from '../components/ModalVenda';
-import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
+import ModalVenda from '@/components/ui/modals/ModalRegistroBaixa';
+import ConfirmDeleteModal from '../components/ui/modals/ConfirmDeleteModal';
 import toast from 'react-hot-toast';
 
 export default function Home() {
@@ -180,7 +180,7 @@ export default function Home() {
         {/* Ações */}
         <div className="flex flex-col sm:flex-row gap-4 mb-8">
           <Link
-            href="/adicionar"
+            href="produto/adicionar"
             className="inline-flex items-center justify-center bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-poppins text-sm font-medium"
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -258,7 +258,7 @@ export default function Home() {
                   </td>
                   <td className="py-3 px-4 flex flex-wrap gap-2">
                     <Link
-                      href={`/editar/${p.id}`}
+                      href={`produto/editar/${p.id}`}
                       className="text-green-600 hover:text-green-800 font-poppins text-sm font-medium"
                     >
                       Editar

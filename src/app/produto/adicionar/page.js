@@ -190,9 +190,8 @@ export default function Adicionar() {
             <option value="BOTA">Bota</option>
             <option value="CHINELO">Chinelo</option>
             <option value="MOCASSIM">Mocassim</option>
-            <option value="OXFORD">Oxford</option>
-            <option value="PEEPTOE">Peep Toe</option>
-            <option value="SLINGBACK">Slingback</option>
+            <option value="OXFORD">Papete</option>
+            <option value="PEEPTOE">Chuteira</option>
           </select>
           <input 
             name="marca" 
