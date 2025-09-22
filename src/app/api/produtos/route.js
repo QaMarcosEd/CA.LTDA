@@ -8,21 +8,16 @@ export async function GET(request) {
   try {
     // Extrai os parâmetros de busca da URL da requisição
     const { searchParams } = new URL(request.url);
-    // Obtém o parâmetro 'marca' ou undefined se não estiver presente
     const marca = searchParams.get('marca') || undefined;
-    // Obtém o parâmetro 'modelo' ou undefined se não estiver presente
     const modelo = searchParams.get('modelo') || undefined;
-    // Obtém o parâmetro 'genero' ou undefined se não estiver presente
     const genero = searchParams.get('genero') || undefined;
-    // Obtém o parâmetro 'tamanho' e converte para número, ou undefined se não estiver presente
     const tamanho = searchParams.get('tamanho') ? parseInt(searchParams.get('tamanho')) : undefined;
-    // Obtém o número da página, default 1 se não especificado
+    const referencia = searchParams.get('referencia') || undefined;
     const page = searchParams.get('page') ? parseInt(searchParams.get('page')) : 1;
-    // Obtém o limite de itens por página, default 10 se não especificado
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')) : 10;
 
-    // Chama a função do controller para buscar os produtos com os filtros fornecidos
-    const result = await getAllProdutos({ marca, modelo, genero, tamanho, page, limit });
+    // Chama a função do controller com os filtros fornecidos
+    const result = await getAllProdutos({ marca, modelo, genero, tamanho, referencia, page, limit });
 
     return new Response(JSON.stringify(result), { status: 200 });
   } catch (error) {

@@ -1,15 +1,14 @@
 import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
-
-
-export async function getAllProdutos({ marca, modelo, genero, tamanho, page = 1, limit = 10 }) {
+export async function getAllProdutos({ marca, modelo, genero, tamanho, referencia, page = 1, limit = 10 }) {
   try {
     const where = {};
-    if (marca) where.marca = marca;
-    if (modelo) where.modelo = modelo;
-    if (genero) where.genero = genero;
-    if (tamanho) where.tamanho = tamanho;
+    if (marca) where.marca = { contains: marca }; // Remova mode: 'insensitive'
+    if (modelo) where.modelo = { contains: modelo };
+    if (genero) where.genero = { contains: genero };
+    if (tamanho) where.tamanho = { equals: parseInt(tamanho) }; // Já está correto
+    if (referencia) where.referencia = { contains: referencia }; // Remova mode: 'insensitive'
 
     const total = await prisma.produto.count({ where });
     const produtos = await prisma.produto.findMany({
@@ -28,7 +27,6 @@ export async function getAllProdutos({ marca, modelo, genero, tamanho, page = 1,
     throw new Error('Erro ao buscar produtos');
   }
 }
-
 
 // CREATE: insere novo produto no banco
 export async function createProduto(data) {
