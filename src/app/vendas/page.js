@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import { format } from 'date-fns';
 import ParcelasModal from '@/components/ui/modals/ParcelasModal';
 
 export default function Vendas() {
@@ -156,11 +157,14 @@ export default function Vendas() {
                     <td className="px-4 py-3 text-sm font-poppins text-gray-900">R$ {v.valorTotal.toFixed(2)}</td>
                     <td className="px-4 py-3 text-sm font-poppins text-gray-900">{v.cliente?.nome || 'N/A'}</td>
                     <td className="px-4 py-3 text-sm font-poppins text-gray-900">
-                      {new Date(v.data).toLocaleString('pt-BR', {
+                      {v.dataVenda ? format(new Date(v.dataVenda), 'dd/MM/yyyy') : 'N/A'}
+                    </td>
+                    {/* <td className="px-4 py-3 text-sm font-poppins text-gray-900">
+                      {new Date(v.createdAt).toLocaleString('pt-BR', {
                         dateStyle: 'short',
                         timeStyle: 'short',
                       })}
-                    </td>
+                    </td> */}
                     <td className="px-4 py-3 text-sm font-poppins text-gray-900">{getStatusVenda(v)}</td>
                     <td className="px-4 py-3 text-sm font-poppins text-gray-900">
                       {v.parcelas && v.parcelas.length > 0 && (

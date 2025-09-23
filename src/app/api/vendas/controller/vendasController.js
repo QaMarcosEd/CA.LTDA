@@ -1,4 +1,4 @@
-// // vendas/controller/vendasController.js
+// vendas/controller/vendasController.js
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 export async function createVenda(data) {
   try {
     // Extrai os campos do objeto 'data' recebido
-    const { produtoId, quantidade, observacao, clienteNome, clienteId, valorTotal, isParcelado, numeroParcelas, entrada } = data;
+    const { produtoId, quantidade, observacao, clienteNome, clienteId, valorTotal, isParcelado, numeroParcelas, entrada, dataVenda } = data;
     console.log('Dados recebidos em createVenda:', data); // Depuração
 
     // Validar entrada
@@ -34,6 +34,19 @@ export async function createVenda(data) {
     if (isParcelado && entrada && parseFloat(entrada) > parseFloat(valorTotal)) {
       console.log('Validação falhou: Entrada maior que valor total', { entrada, valorTotal });
       return { status: 400, data: { error: 'Entrada não pode ser maior que o valor total' } };
+    }
+    if (!dataVenda) {
+      console.log('Validação falhou: dataVenda faltando', { dataVenda });
+      return { status: 400, data: { error: 'Data da venda é obrigatória' } };
+    }
+    const parsedDataVenda = new Date(dataVenda);
+    if (isNaN(parsedDataVenda.getTime())) {
+      console.log('Validação falhou: Data de venda inválida', { dataVenda });
+      return { status: 400, data: { error: 'Data de venda inválida' } };
+    }
+    if (parsedDataVenda > new Date()) {
+      console.log('Validação falhou: Data de venda futura', { dataVenda });
+      return { status: 400, data: { error: 'Data de venda não pode ser futura' } };
     }
 
     // Usar clienteId diretamente se fornecido; caso contrário, buscar ou criar cliente por clienteNome
@@ -75,6 +88,8 @@ export async function createVenda(data) {
       entrada: isParcelado ? parseFloat(entrada) || 0 : parseFloat(valorTotal), // Entrada é valorTotal se não parcelado
       clienteId: finalClienteId,
       observacao: observacao || null,
+      dataVenda: parsedDataVenda,
+      // createdAt é automático via @default(now())
     };
 
     if (isParcelado) {
@@ -85,7 +100,7 @@ export async function createVenda(data) {
 
       vendaData.parcelas = {
         create: Array.from({ length: numeroParcelas }, (_, index) => {
-          const dataVencimento = new Date();
+          const dataVencimento = new Date(parsedDataVenda); // Baseado em dataVenda
           dataVencimento.setDate(dataVencimento.getDate() + 30 * (index + 1)); // 30 dias entre parcelas
           const isLastParcela = index === numeroParcelas - 1;
           const valorParcela = isLastParcela
@@ -135,7 +150,7 @@ export async function getVendasPorProduto(produtoId) {
   try {
     const vendas = await prisma.venda.findMany({
       where: { produtoId: parseInt(produtoId) },
-      orderBy: { data: 'desc' },
+      orderBy: { dataVenda: 'desc' }, // Alterado de 'data' para 'dataVenda'
       include: {
         produto: true,
         cliente: { select: { nome: true } },
@@ -154,7 +169,7 @@ export async function getVendasPorProduto(produtoId) {
 export async function getTodasAsVendas() {
   try {
     const vendas = await prisma.venda.findMany({
-      orderBy: { data: 'desc' },
+      orderBy: { dataVenda: 'desc' }, // Alterado de 'data' para 'dataVenda'
       include: {
         produto: true,
         cliente: { select: { nome: true } },
@@ -168,5 +183,3 @@ export async function getTodasAsVendas() {
     return { status: 500, data: { error: 'Erro ao listar todas as vendas', details: error.message } };
   }
 }
-
-

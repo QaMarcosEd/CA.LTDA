@@ -43,10 +43,11 @@ model Venda {
   quantidade   Int
   precoVenda   Float
   valorTotal   Float
-  entrada      Float    @default(0) // Novo campo para entrada
+  entrada      Float    @default(0)
   clienteId    Int
   observacao   String?
-  data         DateTime @default(now())
+  dataVenda    DateTime
+  createdAt    DateTime @default(now())
   produto      Produto  @relation(fields: [produtoId], references: [id])
   cliente      Cliente  @relation(fields: [clienteId], references: [id])
   parcelas     Parcela[]
