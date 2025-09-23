@@ -77,4 +77,5 @@ model Produto {
   marca      String?
   disponivel Boolean  @default(true)
   vendas     Venda[]
+  lote String?
 }

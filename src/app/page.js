@@ -4,27 +4,23 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import ModalVenda from '@/components/ui/modals/ModalRegistroBaixa';
 import ConfirmDeleteModal from '../components/ui/modals/ConfirmDeleteModal';
+import ModalLote from '@/components/ui/modals/ModalLote'; // Novo modal
 import toast from 'react-hot-toast';
 
 export default function Home() {
   const [produtos, setProdutos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [loteModalOpen, setLoteModalOpen] = useState(false); // Novo estado para modal de lote
   const [selectedProduto, setSelectedProduto] = useState(null);
-
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedDeleteProduto, setSelectedDeleteProduto] = useState(null);
-
-  // Filtros
   const [marcaFiltro, setMarcaFiltro] = useState('');
   const [tamanhoFiltro, setTamanhoFiltro] = useState('');
   const [referenciaFiltro, setReferenciaFiltro] = useState('');
-
-  // Paginação
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Função para buscar produtos
   const fetchProdutos = async (filtros = {}, pg = 1) => {
     setLoading(true);
     const query = new URLSearchParams();
@@ -57,42 +53,30 @@ export default function Home() {
   };
 
   const handleDelete = async (id) => {
-    console.log('Iniciando handleDelete com ID:', id);
     try {
-      console.log('Enviando requisição DELETE para /api/produtos');
       const response = await fetch('/api/produtos', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
       });
-
-      console.log('Resposta recebida:', { status: response.status, ok: response.ok });
       const data = await response.json();
-      console.log('Dados parseados:', data);
-
       if (response.status === 200) {
-        console.log('Entrou no bloco de sucesso');
         toast.success('Produto deletado com sucesso! ✅');
-        console.log('Toast de sucesso disparado');
         fetchProdutos({ marca: marcaFiltro, tamanho: tamanhoFiltro, referencia: referenciaFiltro }, page);
       } else {
-        console.log('Entrou no bloco de erro');
         toast.error(data.error || 'Erro ao deletar produto ❌');
       }
     } catch (error) {
       console.error('Erro geral em handleDelete:', error);
       toast.error('Erro inesperado ao deletar produto ❌');
     }
-    console.log('Fim da execução de handleDelete');
   };
 
-  // Open delete confirmation modal
   const handleOpenDeleteModal = (produto) => {
     setSelectedDeleteProduto(produto);
     setDeleteModalOpen(true);
   };
 
-  // Close delete modal
   const handleCloseDeleteModal = () => {
     setDeleteModalOpen(false);
     setSelectedDeleteProduto(null);
@@ -100,38 +84,41 @@ export default function Home() {
 
   const handleConfirmDelete = async () => {
     if (selectedDeleteProduto) {
-      console.log('Iniciando handleConfirmDelete para produto:', selectedDeleteProduto.id);
       await handleDelete(selectedDeleteProduto.id);
-      console.log('handleDelete concluído, fechando modal');
       handleCloseDeleteModal();
-    } else {
-      console.log('Nenhum produto selecionado para exclusão');
     }
   };
 
-  // Abrir modal de venda
   const handleOpenModal = (produto) => {
     setSelectedProduto(produto);
     setModalOpen(true);
   };
 
-  // Fechar modal de venda
   const handleCloseModal = () => {
     setModalOpen(false);
     setSelectedProduto(null);
   };
 
-  // Enviar venda
   const handleSubmitVenda = async (vendaData) => {
-    console.log('Enviando venda:', vendaData); // Depuração
     const response = await fetch('/api/vendas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(vendaData),
     });
-
-    // Retorna a resposta pra ModalVenda verificar
     return response;
+  };
+
+  const handleSubmitLote = async (data) => {
+    const response = await fetch('/api/produtos/lote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const result = await response.json();
+    if (response.status === 201) {
+      fetchProdutos({ marca: marcaFiltro, tamanho: tamanhoFiltro, referencia: referenciaFiltro }, page);
+    }
+    return { status: response.status, data: result };
   };
 
   if (loading) return (
@@ -188,6 +175,15 @@ export default function Home() {
             </svg>
             Adicionar Produto
           </Link>
+          <button
+            onClick={() => setLoteModalOpen(true)}
+            className="inline-flex items-center justify-center bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-poppins text-sm font-medium"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0v10a2 2 0 01-2 2H6a2 2 0 01-2-2V7m16 0l-8 4-8-4" />
+            </svg>
+            Adicionar Lote
+          </button>
           <Link
             href="/dashboard"
             className="inline-flex items-center justify-center bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors font-poppins text-sm font-medium"
@@ -231,6 +227,7 @@ export default function Home() {
                 <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Gênero</th>
                 <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Modelo</th>
                 <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Marca</th>
+                <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Lote</th>
                 <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Status</th>
                 <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Ações</th>
               </tr>
@@ -247,6 +244,7 @@ export default function Home() {
                   <td className="py-3 px-4 text-sm font-poppins text-gray-800">{p.genero || 'N/A'}</td>
                   <td className="py-3 px-4 text-sm font-poppins text-gray-800">{p.modelo || 'N/A'}</td>
                   <td className="py-3 px-4 text-sm font-poppins text-gray-800">{p.marca || 'N/A'}</td>
+                  <td className="py-3 px-4 text-sm font-poppins text-gray-800">{p.lote || 'N/A'}</td>
                   <td className="py-3 px-4 text-sm font-poppins text-gray-800">
                     <span
                       className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
@@ -320,6 +318,13 @@ export default function Home() {
           onClose={handleCloseDeleteModal}
           onConfirm={handleConfirmDelete}
           produtoNome={selectedDeleteProduto?.nome || ''}
+        />
+
+        {/* Modal de lote */}
+        <ModalLote
+          isOpen={loteModalOpen}
+          onClose={() => setLoteModalOpen(false)}
+          onSubmit={handleSubmitLote}
         />
       </div>
     </div>

@@ -31,18 +31,12 @@ export async function getAllProdutos({ marca, modelo, genero, tamanho, referenci
 // CREATE: insere novo produto no banco
 export async function createProduto(data) {
   try {
-    // Validação de campos obrigatórios
-    const camposObrigatorios = ['nome','tamanho','referencia','cor','quantidade','preco','genero','modelo','marca'];
+    const camposObrigatorios = ['nome', 'tamanho', 'referencia', 'cor', 'quantidade', 'preco', 'genero', 'modelo', 'marca'];
     const faltando = camposObrigatorios.filter(c => data[c] === undefined || data[c] === null || data[c] === '');
-
     if (faltando.length) {
-      return { 
-        status: 400, 
-        data: { error: `Campos obrigatórios faltando: ${faltando.join(', ')}` } 
-      };
+      return { status: 400, data: { error: `Campos obrigatórios faltando: ${faltando.join(', ')}` } };
     }
 
-    // Validações adicionais
     if (isNaN(parseInt(data.tamanho)) || parseInt(data.tamanho) <= 0) {
       return { status: 400, data: { error: 'Tamanho inválido' } };
     }
@@ -53,7 +47,6 @@ export async function createProduto(data) {
       return { status: 400, data: { error: 'Preço inválido' } };
     }
 
-    // Criação no banco
     const produto = await prisma.produto.create({
       data: {
         nome: data.nome,
@@ -65,14 +58,15 @@ export async function createProduto(data) {
         genero: data.genero,
         modelo: data.modelo,
         marca: data.marca,
-        disponivel: parseInt(data.quantidade) > 0 // flag de disponibilidade
-      }
-    })
+        disponivel: parseInt(data.quantidade) > 0,
+        lote: data.lote || null, // Suporte ao campo lote
+      },
+    });
 
-    return { status: 201, data: produto }
+    return { status: 201, data: produto };
   } catch (error) {
-    console.error('Erro ao criar produto:', error)
-    return { status: 500, data: { error: 'Erro ao criar produto', details: error.message } }
+    console.error('Erro ao criar produto:', error);
+    return { status: 500, data: { error: 'Erro ao criar produto', details: error.message } };
   }
 }
 
