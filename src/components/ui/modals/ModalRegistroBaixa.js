@@ -404,7 +404,11 @@ export default function ModalVenda({ isOpen, onClose, produto, onSubmit }) {
         return;
       }
     }
-    const selectedDate = parseISO(dataVenda);
+    // const selectedDate = parseISO(dataVenda);
+    // Cria a data em UTC, evitando que o dia “volte” por causa do fuso horário
+    const [year, month, day] = dataVenda.split('-');
+    const selectedDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
+
     const today = new Date();
     if (selectedDate > today) {
       toast.error('Data de venda não pode ser futura');
@@ -450,7 +454,8 @@ export default function ModalVenda({ isOpen, onClose, produto, onSubmit }) {
         isParcelado,
         numeroParcelas: isParcelado ? parseInt(numeroParcelas) : 1,
         entrada: isParcelado ? parseFloat(entrada) || 0 : parseFloat(valorTotal),
-        dataVenda, // Adiciona dataVenda
+        // dataVenda, // Adiciona dataVenda
+        dataVenda: selectedDate, // <-- agora já está correto em UTC
       };
       console.log('Dados enviados pro onSubmit:', vendaData); // Depuração
       const response = await onSubmit(vendaData);

@@ -74,7 +74,7 @@ export default function ModalLote({ isOpen, onClose, onSubmit }) {
         {/* Dados Genéricos */}
         <div className="mb-6">
           <h3 className="text-lg font-semibold font-poppins text-gray-700 mb-4">Dados do Modelo</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-600">
             <input
               name="nome"
               value={genericos.nome}
@@ -157,7 +157,7 @@ export default function ModalLote({ isOpen, onClose, onSubmit }) {
             ))}
           </div>
           {variacoes.length > 0 && (
-            <div className="flex items-center mb-4">
+            <div className="flex items-center mb-4 text-gray-600">
               <input
                 type="number"
                 placeholder="Quantidade para todos"
@@ -179,7 +179,7 @@ export default function ModalLote({ isOpen, onClose, onSubmit }) {
                 type="number"
                 value={v.quantidade}
                 onChange={(e) => updateQuantidade(v.tamanho, e.target.value)}
-                className="border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm w-20"
+                className="border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm w-20 text-gray-600"
                 min="0"
               />
             </div>

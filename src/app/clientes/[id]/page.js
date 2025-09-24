@@ -4,7 +4,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import toast from 'react-hot-toast';
 
 export default function DetalhesCliente() {
   const params = useParams();
@@ -89,7 +88,7 @@ export default function DetalhesCliente() {
                       <td className="py-3 px-4 text-sm font-poppins text-gray-800">R$ {getValorPago(v)}</td>
                       <td className="py-3 px-4 text-sm font-poppins text-gray-800">R$ {v.valorTotal.toFixed(2)}</td>
                       <td className="py-3 px-4 text-sm font-poppins text-gray-800">
-                        {new Date(v.data).toLocaleDateString('pt-BR')}
+                        {new Date(v.dataVenda).toLocaleDateString('pt-BR')}
                       </td>
                     </tr>
                   ))}
