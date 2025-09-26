@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { formatDateToBrazil } from '../../../../utils/formatDate';
 
 export default function DetalhesCliente() {
   const params = useParams();
@@ -88,7 +89,7 @@ export default function DetalhesCliente() {
                       <td className="py-3 px-4 text-sm font-poppins text-gray-800">R$ {getValorPago(v)}</td>
                       <td className="py-3 px-4 text-sm font-poppins text-gray-800">R$ {v.valorTotal.toFixed(2)}</td>
                       <td className="py-3 px-4 text-sm font-poppins text-gray-800">
-                        {new Date(v.dataVenda).toLocaleDateString('pt-BR')}
+                        {formatDateToBrazil(v.dataVenda)}
                       </td>
                     </tr>
                   ))}

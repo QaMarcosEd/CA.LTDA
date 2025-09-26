@@ -17,7 +17,8 @@ CREATE TABLE "Venda" (
     "entrada" REAL NOT NULL DEFAULT 0,
     "clienteId" INTEGER NOT NULL,
     "observacao" TEXT,
-    "data" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "dataVenda" DATETIME NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "Venda_produtoId_fkey" FOREIGN KEY ("produtoId") REFERENCES "Produto" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "Venda_clienteId_fkey" FOREIGN KEY ("clienteId") REFERENCES "Cliente" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
@@ -47,7 +48,9 @@ CREATE TABLE "Produto" (
     "genero" TEXT,
     "modelo" TEXT,
     "marca" TEXT,
-    "disponivel" BOOLEAN NOT NULL DEFAULT true
+    "disponivel" BOOLEAN NOT NULL DEFAULT true,
+    "lote" TEXT,
+    "dataRecebimento" DATETIME NOT NULL
 );
 
 -- CreateIndex

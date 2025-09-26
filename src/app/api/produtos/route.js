@@ -1,3 +1,4 @@
+// api/produtos/routes.js
 import { getAllProdutos, createProduto, updateProduto, deleteProduto } from './controller/produtosController';
 import { PrismaClient } from '@prisma/client';
 
@@ -53,3 +54,4 @@ export async function DELETE(request) {
   console.log('Resposta enviada para o cliente:', result); // Log adicional
   return new Response(JSON.stringify(result.data), { status: result.status });
 }
+

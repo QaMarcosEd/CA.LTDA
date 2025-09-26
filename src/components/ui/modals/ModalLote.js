@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { format } from 'date-fns';
 
 export default function ModalLote({ isOpen, onClose, onSubmit }) {
   const [genericos, setGenericos] = useState({
@@ -13,6 +14,7 @@ export default function ModalLote({ isOpen, onClose, onSubmit }) {
     modelo: '',
     marca: '',
     lote: '',
+    dataRecebimento: format(new Date(), 'yyyy-MM-dd')
   });
   const [variacoes, setVariacoes] = useState([]);
   const [tamanhoSelecionado, setTamanhoSelecionado] = useState('');
@@ -52,6 +54,19 @@ export default function ModalLote({ isOpen, onClose, onSubmit }) {
       return;
     }
 
+    if (!genericos.dataRecebimento) {
+      toast.error('Data de Recebimento é obrigatória');
+      return;
+    }
+    if (new Date(genericos.dataRecebimento).toString() === 'Invalid Date') {
+      toast.error('Data de Recebimento inválida');
+      return;
+    }
+    if (new Date(genericos.dataRecebimento) > new Date()) {
+      toast.error('Data de Recebimento não pode ser futura');
+      return;
+    }
+
     const data = { genericos, variacoes };
     const response = await onSubmit(data);
     if (response.status === 201) {
@@ -73,7 +88,7 @@ export default function ModalLote({ isOpen, onClose, onSubmit }) {
 
         {/* Dados Genéricos */}
         <div className="mb-6">
-          <h3 className="text-lg font-semibold font-poppins text-gray-700 mb-4">Dados do Modelo</h3>
+          <h3 className="text-lg font-semibold font-poppins text-gray-700 mb-4">Cadastro de Lote</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-600">
             <input
               name="nome"
@@ -135,6 +150,15 @@ export default function ModalLote({ isOpen, onClose, onSubmit }) {
               value={genericos.lote}
               onChange={handleGenericosChange}
               placeholder="Lote (opcional)"
+              className="border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
+            />
+            <input
+              name="dataRecebimento"
+              type="date"
+              value={genericos.dataRecebimento}
+              onChange={handleGenericosChange}
+              placeholder="Data de Recebimento"
+              max={format(new Date(), 'yyyy-MM-dd')}
               className="border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
             />
           </div>
@@ -208,3 +232,4 @@ export default function ModalLote({ isOpen, onClose, onSubmit }) {
     </div>
   );
 }
+

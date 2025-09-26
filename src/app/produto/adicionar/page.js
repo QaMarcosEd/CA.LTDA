@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { format } from 'date-fns';
 
 export default function Adicionar() {
   const [form, setForm] = useState({ 
@@ -14,7 +15,8 @@ export default function Adicionar() {
     preco: '', 
     genero: '', 
     modelo: '', 
-    marca: '' 
+    marca: '',
+    dataRecebimento: ""
   });
   const [isLoading, setIsLoading] = useState(false); // ← ADICIONADO: Estado de loading
   const router = useRouter();
@@ -24,7 +26,7 @@ export default function Adicionar() {
     setIsLoading(true); // ← ADICIONADO: Inicia loading
     
     // Validação de campos obrigatórios e numéricos ANTES de enviar
-    const camposObrigatorios = ['nome', 'tamanho', 'referencia', 'cor', 'quantidade', 'preco', 'genero', 'modelo', 'marca'];
+    const camposObrigatorios = ['nome', 'tamanho', 'referencia', 'cor', 'quantidade', 'preco', 'genero', 'modelo', 'marca', 'dataRecebimento'];
     const faltando = camposObrigatorios.filter(c => !form[c] || form[c] === '');
     
     if (faltando.length > 0) {
@@ -53,6 +55,19 @@ export default function Adicionar() {
       setIsLoading(false); // ← ADICIONADO: Para loading se validação falhar
       return;
     }
+
+    if (!data.dataRecebimento) {
+      toast.error('Data de Recebimento é obrigatória');
+      return;
+    }
+    if (new Date(data.dataRecebimento).toString() === 'Invalid Date') {
+      toast.error('Data de Recebimento inválida');
+      return;
+    }
+    if (new Date(data.dataRecebimento) > new Date()) {
+      toast.error('Data de Recebimento não pode ser futura');
+      return;
+    }
     
     // Se passou nas validações, monta o data
     const data = {
@@ -65,6 +80,7 @@ export default function Adicionar() {
       genero: form.genero,
       modelo: form.modelo,
       marca: form.marca,
+      dataRecebimento: form.dataRecebimento
       // Remove 'disponivel' daqui – a API já calcula isso
     };
 
@@ -160,6 +176,15 @@ export default function Adicionar() {
             disabled={isLoading}
             className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200 placeholder-gray-500 text-gray-800 text-base disabled:bg-gray-100 disabled:cursor-not-allowed" 
           />
+          <input
+            name="dataRecebimento"
+            type="date"
+            value={form.dataRecebimento}
+            onChange={handleChange}
+            placeholder="Data de Recebimento"
+            max={format(new Date(), 'yyyy-MM-dd')}
+            className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200 placeholder-gray-500 text-gray-800 text-base disabled:bg-gray-100 disabled:cursor-not-allowed" 
+          />
           <select 
             name="genero" 
             onChange={handleChange}
@@ -218,3 +243,4 @@ export default function Adicionar() {
     </div>
   );
 }
+

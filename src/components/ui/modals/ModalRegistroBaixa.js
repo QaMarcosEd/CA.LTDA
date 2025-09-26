@@ -670,3 +670,4 @@ export default function ModalVenda({ isOpen, onClose, produto, onSubmit }) {
     </div>
   );
 }
+

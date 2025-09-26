@@ -1,3 +1,4 @@
+// api/produtos/[id]/routes.js
 import { NextResponse } from 'next/server'
 
 // Importa a função responsável por buscar o produto no banco/controlador
@@ -34,3 +35,4 @@ export async function GET(req, { params }) {
     )
   }
 }
+

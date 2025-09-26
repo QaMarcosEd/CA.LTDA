@@ -79,4 +79,5 @@ model Produto {
   disponivel Boolean  @default(true)
   vendas     Venda[]
   lote String?
+  dataRecebimento  DateTime
 }

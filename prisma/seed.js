@@ -11,9 +11,20 @@ async function main() {
   const modelos = Object.values(Modelo)
   const generos = Object.values(Genero)
 
+  // Função pra gerar data aleatória entre 01/01/2024 e 24/09/2025
+  function gerarDataAleatoria() {
+    const start = new Date('2024-01-01')
+    const end = new Date('2025-09-24')
+    const date = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()))
+    return date.toISOString().split('T')[0] // Formato YYYY-MM-DD
+  }
+
   const produtos = []
 
   for (const marca of marcas) {
+    // Simula uma data de recebimento por marca (como se fosse um lote)
+    const dataRecebimento = gerarDataAleatoria()
+    
     for (let tamanho = 33; tamanho <= 44; tamanho++) {
       for (let i = 0; i < 2; i++) {
         const modelo = modelos[Math.floor(Math.random() * modelos.length)]
@@ -33,6 +44,8 @@ async function main() {
           modelo,
           marca,
           disponivel: quantidade > 0,
+          lote: `Lote-${marca.slice(0, 3).toUpperCase()}-${tamanho}-${i + 1}`,
+          dataRecebimento: new Date(dataRecebimento), // Usa a mesma data por marca
         })
       }
     }
@@ -55,3 +68,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect()
   })
+  

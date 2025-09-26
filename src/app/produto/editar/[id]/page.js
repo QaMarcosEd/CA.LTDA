@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { format } from 'date-fns';
 
 export default function Editar() {
-  const [form, setForm] = useState({ nome: '', tamanho: '', referencia: '', cor: '', quantidade: '', preco: '', genero: '', modelo: '', marca: '', disponivel: true });
+  const [form, setForm] = useState({ nome: '', tamanho: '', referencia: '', cor: '', quantidade: '', preco: '', genero: '', modelo: '', marca: '', disponivel: true, dataRecebimento: '' });
   const router = useRouter();
   const { id } = useParams();
 
@@ -28,7 +29,8 @@ useEffect(() => {
           genero: produto.genero || '',
           modelo: produto.modelo || '',
           marca: produto.marca || '',
-          disponivel: produto.quantidade > 0
+          disponivel: produto.quantidade > 0,
+          dataRecebimento: produto.dataRecebimento ? format(new Date(produto.dataRecebimento), 'yyyy-MM-dd') : ''
         })
       })
       .catch(err => console.error('Erro ao carregar produto:', err))
@@ -38,11 +40,23 @@ useEffect(() => {
 
 const handleSubmit = async (e) => {
   e.preventDefault();
-  if (!form.nome || !form.tamanho || !form.referencia || !form.cor || !form.quantidade || !form.preco || !form.genero || !form.modelo || !form.marca) {
+  if (!form.nome || !form.tamanho || !form.referencia || !form.cor || !form.quantidade || !form.preco || !form.genero || !form.modelo || !form.marca || !form.dataRecebimento) {
     console.error('Erro: Todos os campos são obrigatórios. Dados atuais:', form);
     alert('Por favor, preencha todos os campos obrigatórios!');
     return;
   }
+
+  if (new Date(form.dataRecebimento).toString() === 'Invalid Date' || !form.dataRecebimento) {
+    console.error('Erro: Data de Recebimento inválida ou não preenchida');
+    alert('Por favor, preencha uma Data de Recebimento válida!');
+    return;
+  }
+  if (new Date(form.dataRecebimento) > new Date()) {
+    console.error('Erro: Data de Recebimento não pode ser futura');
+    alert('Data de Recebimento não pode ser futura!');
+    return;
+  }
+
   const data = {
     id: parseInt(id),
     nome: form.nome,
@@ -55,6 +69,7 @@ const handleSubmit = async (e) => {
     modelo: form.modelo,
     marca: form.marca,
     disponivel: parseInt(form.quantidade) > 0,
+    dataRecebimento: new Date(form.dataRecebimento)
   };
   console.log('Antes do fetch, dados:', data); // Log antes do fetch
   const response = await fetch('/api/produtos', {
@@ -167,6 +182,15 @@ const handleSubmit = async (e) => {
             onChange={handleChange}
             className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200 placeholder-gray-500 text-gray-800 text-base"
           />
+          <input
+            name="dataRecebimento"
+            type="date"
+            value={form.dataRecebimento}
+            placeholder="Data de Recebimento"
+            onChange={handleChange}
+            max={format(new Date(), 'yyyy-MM-dd')}
+            className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200 placeholder-gray-500 text-gray-800 text-base"
+          />
           <p className="text-sm text-gray-600">Status: {form.disponivel ? 'Disponível' : 'Esgotado'}</p>
           <button
             type="submit"
@@ -187,3 +211,4 @@ const handleSubmit = async (e) => {
     </div>
   );
 }
+
