@@ -183,3 +183,4 @@ export async function getTodasAsVendas() {
     return { status: 500, data: { error: 'Erro ao listar todas as vendas', details: error.message } };
   }
 }
+
