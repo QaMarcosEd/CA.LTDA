@@ -38,19 +38,23 @@ model Cliente {
 }
 
 model Venda {
-  id           Int      @id @default(autoincrement())
-  produtoId    Int
-  quantidade   Int
-  precoVenda   Float
-  valorTotal   Float
-  entrada      Float    @default(0)
-  clienteId    Int
-  observacao   String?
-  dataVenda    DateTime
-  createdAt    DateTime @default(now())
-  produto      Produto  @relation(fields: [produtoId], references: [id])
-  cliente      Cliente  @relation(fields: [clienteId], references: [id])
-  parcelas     Parcela[]
+  id             Int      @id @default(autoincrement())
+  produtoId      Int
+  quantidade     Int
+  precoVenda     Float
+  valorTotal     Float
+  entrada        Float    @default(0)
+  clienteId      Int
+  observacao     String?
+  dataVenda      DateTime
+  formaPagamento String?   // Ex.: 'DINHEIRO', 'PIX', 'CARTAO_VISA_DEBITO', 'PROMISSORIA'
+  taxa           Float?    @default(0) // Taxa em reais (ex.: 4.99)
+  valorLiquido   Float?    @default(0) // Valor após taxa (ex.: 95.01)
+  status         String   @default("ABERTO") // 'ABERTO', 'QUITADO', 'CANCELADO'
+  createdAt      DateTime @default(now())
+  produto        Produto  @relation(fields: [produtoId], references: [id])
+  cliente        Cliente  @relation(fields: [clienteId], references: [id])
+  parcelas       Parcela[]
 }
 
 model Parcela {
@@ -60,24 +64,36 @@ model Parcela {
   valor          Float
   valorPago      Float    @default(0)
   dataVencimento DateTime
+  dataPagamento  DateTime? // Data quando foi pago
   pago           Boolean  @default(false)
   observacao     String?
+  formaPagamento String?   // Ex.: 'DINHEIRO', 'PIX', 'CARTAO_VISA_DEBITO'
+  taxa           Float?    @default(0) // Taxa em reais (ex.: 4.99)
+  valorLiquido   Float?    @default(0) // Valor após taxa (ex.: 95.01)
   venda          Venda    @relation(fields: [vendaId], references: [id])
 }
 
 model Produto {
-  id         Int      @id @default(autoincrement())
-  nome       String
-  tamanho    Int
-  referencia String?
-  cor        String
-  quantidade Int
-  preco      Float
-  genero     String?
-  modelo     String?
-  marca      String?
-  disponivel Boolean  @default(true)
-  vendas     Venda[]
-  lote String?
+  id               Int      @id @default(autoincrement())
+  nome             String
+  tamanho          Int
+  referencia       String?
+  cor              String
+  quantidade       Int
+  preco            Float
+  genero           String?
+  modelo           String?
+  marca            String?
+  disponivel       Boolean  @default(true)
+  vendas           Venda[]
+  lote             String?
   dataRecebimento  DateTime
+}
+
+model TaxaCartao {
+  id             Int     @id @default(autoincrement())
+  bandeira       String  // Ex.: 'VISA', 'MASTERCARD', 'ELO'
+  modalidade     String  // Ex.: 'DEBITO', 'CREDITO_A_VISTA', '2_3X', '4_6X'
+  taxaPercentual Float   // Ex.: 1.99 para 1,99%
+  @@unique([bandeira, modalidade]) // Evita duplicatas
 }

@@ -18,6 +18,10 @@ CREATE TABLE "Venda" (
     "clienteId" INTEGER NOT NULL,
     "observacao" TEXT,
     "dataVenda" DATETIME NOT NULL,
+    "formaPagamento" TEXT,
+    "taxa" REAL DEFAULT 0,
+    "valorLiquido" REAL DEFAULT 0,
+    "status" TEXT NOT NULL DEFAULT 'ABERTO',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "Venda_produtoId_fkey" FOREIGN KEY ("produtoId") REFERENCES "Produto" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "Venda_clienteId_fkey" FOREIGN KEY ("clienteId") REFERENCES "Cliente" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
@@ -31,8 +35,12 @@ CREATE TABLE "Parcela" (
     "valor" REAL NOT NULL,
     "valorPago" REAL NOT NULL DEFAULT 0,
     "dataVencimento" DATETIME NOT NULL,
+    "dataPagamento" DATETIME,
     "pago" BOOLEAN NOT NULL DEFAULT false,
     "observacao" TEXT,
+    "formaPagamento" TEXT,
+    "taxa" REAL DEFAULT 0,
+    "valorLiquido" REAL DEFAULT 0,
     CONSTRAINT "Parcela_vendaId_fkey" FOREIGN KEY ("vendaId") REFERENCES "Venda" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
@@ -53,5 +61,16 @@ CREATE TABLE "Produto" (
     "dataRecebimento" DATETIME NOT NULL
 );
 
+-- CreateTable
+CREATE TABLE "TaxaCartao" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "bandeira" TEXT NOT NULL,
+    "modalidade" TEXT NOT NULL,
+    "taxaPercentual" REAL NOT NULL
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Cliente_nome_key" ON "Cliente"("nome");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TaxaCartao_bandeira_modalidade_key" ON "TaxaCartao"("bandeira", "modalidade");

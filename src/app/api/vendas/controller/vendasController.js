@@ -6,8 +6,7 @@ const prisma = new PrismaClient();
 // Função para criar uma nova venda no sistema.
 export async function createVenda(data) {
   try {
-    // Extrai os campos do objeto 'data' recebido
-    const { produtoId, quantidade, observacao, clienteNome, clienteId, valorTotal, isParcelado, numeroParcelas, entrada, dataVenda } = data;
+    const { produtoId, quantidade, observacao, clienteNome, clienteId, valorTotal, isParcelado, numeroParcelas, entrada, dataVenda, formaPagamento, bandeira, modalidade } = data;
     console.log('Dados recebidos em createVenda:', data); // Depuração
 
     // Validar entrada
@@ -49,6 +48,32 @@ export async function createVenda(data) {
       return { status: 400, data: { error: 'Data de venda não pode ser futura' } };
     }
 
+    // Validação nova para forma de pagamento
+    if (!formaPagamento) {
+      return { status: 400, data: { error: 'Forma de pagamento é obrigatória' } };
+    }
+    let taxa = 0;
+    let valorLiquido = parseFloat(valorTotal);
+    let formaPagamentoFormatada = formaPagamento.toUpperCase();
+
+    if (formaPagamento === 'CARTAO') {
+      if (!bandeira || !modalidade) {
+        return { status: 400, data: { error: 'Bandeira e modalidade são obrigatórias para cartão' } };
+      }
+      const taxaCartao = await prisma.taxaCartao.findUnique({
+        where: { bandeira_modalidade: { bandeira: bandeira.toUpperCase(), modalidade: modalidade.toUpperCase() } },
+      });
+      if (!taxaCartao) {
+        return { status: 400, data: { error: 'Taxa não encontrada para essa bandeira e modalidade' } };
+      }
+      const taxaPercentual = taxaCartao.taxaPercentual / 100;
+      taxa = parseFloat((parseFloat(valorTotal) * taxaPercentual).toFixed(2));
+      valorLiquido = parseFloat((parseFloat(valorTotal) - taxa).toFixed(2));
+      formaPagamentoFormatada = `CARTAO_${bandeira.toUpperCase()}_${modalidade.toUpperCase()}`;
+    } else if (isParcelado && formaPagamento !== 'PROMISSORIA') {
+      return { status: 400, data: { error: 'Para parcelado sem promissória, use cartão com modalidade' } };
+    }
+
     // Usar clienteId diretamente se fornecido; caso contrário, buscar ou criar cliente por clienteNome
     let finalClienteId = clienteId;
     if (!finalClienteId && clienteNome) {
@@ -85,37 +110,77 @@ export async function createVenda(data) {
       quantidade: parseInt(quantidade),
       precoVenda: parseFloat(produto.preco),
       valorTotal: parseFloat(valorTotal),
-      entrada: isParcelado ? parseFloat(entrada) || 0 : parseFloat(valorTotal), // Entrada é valorTotal se não parcelado
+      entrada: isParcelado ? parseFloat(entrada) || 0 : parseFloat(valorTotal),
       clienteId: finalClienteId,
       observacao: observacao || null,
       dataVenda: parsedDataVenda,
-      // createdAt é automático via @default(now())
-    };
+      formaPagamento: formaPagamentoFormatada,
+      taxa,
+      valorLiquido,
+      status: isParcelado ? 'ABERTO' : 'QUITADO', // Inicial
+    }
+
+    // if (isParcelado) {
+    //   const entradaValor = parseFloat(entrada) || 0;
+    //   const valorRestante = parseFloat(valorTotal) - entradaValor;
+    //   const valorRestanteLiquido = valorLiquido - entradaValor; // Se taxa aplicada ao total
+    //   const valorBaseParcela = Math.floor((valorRestante / numeroParcelas) * 100) / 100;
+    //   const valorBaseParcelaLiquido = Math.floor((valorRestanteLiquido / numeroParcelas) * 100) / 100;
+
+    //   vendaData.parcelas = {
+    //     create: Array.from({ length: numeroParcelas }, (_, index) => {
+    //       const dataVencimento = new Date(parsedDataVenda);
+    //       dataVencimento.setDate(dataVencimento.getDate() + 30 * (index + 1));
+    //       const isLastParcela = index === numeroParcelas - 1;
+    //       const valorParcela = isLastParcela ? parseFloat((valorRestante - valorBaseParcela * (numeroParcelas - 1)).toFixed(2)) : parseFloat(valorBaseParcela.toFixed(2));
+    //       const valorParcelaLiquido = isLastParcela ? parseFloat((valorRestanteLiquido - valorBaseParcelaLiquido * (numeroParcelas - 1)).toFixed(2)) : parseFloat(valorBaseParcelaLiquido.toFixed(2));
+    //       return {
+    //         numeroParcela: index + 1,
+    //         valor: valorParcela,
+    //         valorPago: 0,
+    //         dataVencimento,
+    //         pago: false,
+    //         observacao: null,
+    //         formaPagamento: null, // Será setado ao pagar
+    //         taxa: 0,
+    //         valorLiquido: valorParcelaLiquido, // Inicial, ajustado se forma mudar
+    //       };
+    //     }),
+    //   };
+    // }
 
     if (isParcelado) {
       const entradaValor = parseFloat(entrada) || 0;
       const valorRestante = parseFloat(valorTotal) - entradaValor;
-      const valorBaseParcela = Math.floor((valorRestante / numeroParcelas) * 100) / 100; // Arredonda pra baixo
-      console.log('Calculando parcelas:', { valorTotal, entradaValor, valorRestante, numeroParcelas, valorBaseParcela }); // Depuração
+      const valorRestanteLiquido = valorLiquido - entradaValor; // Valor líquido após taxa, menos entrada
+      const valorBaseParcela = Math.floor((valorRestante / numeroParcelas) * 100) / 100;
+      const valorBaseParcelaLiquido = Math.floor((valorRestanteLiquido / numeroParcelas) * 100) / 100;
+      const taxaPorParcela = formaPagamento === 'CARTAO' ? parseFloat((taxa / numeroParcelas).toFixed(2)) : 0; // Divide taxa total, ou 0 pra promissória
 
       vendaData.parcelas = {
         create: Array.from({ length: numeroParcelas }, (_, index) => {
-          const dataVencimento = new Date(parsedDataVenda); // Baseado em dataVenda
-          dataVencimento.setDate(dataVencimento.getDate() + 30 * (index + 1)); // 30 dias entre parcelas
+          const dataVencimento = new Date(parsedDataVenda);
+          // Ajusta prazo de recebimento: +30 dias por parcela (pode customizar, ex.: +31 pra 1ª, +61 pra 2ª, etc.)
+          dataVencimento.setDate(dataVencimento.getDate() + 30 * (index + 1));
           const isLastParcela = index === numeroParcelas - 1;
           const valorParcela = isLastParcela
             ? parseFloat((valorRestante - valorBaseParcela * (numeroParcelas - 1)).toFixed(2))
             : parseFloat(valorBaseParcela.toFixed(2));
-          const parcela = {
+          const valorParcelaLiquido = isLastParcela
+            ? parseFloat((valorRestanteLiquido - valorBaseParcelaLiquido * (numeroParcelas - 1)).toFixed(2))
+            : parseFloat(valorBaseParcelaLiquido.toFixed(2));
+
+          return {
             numeroParcela: index + 1,
             valor: valorParcela,
             valorPago: 0,
             dataVencimento,
             pago: false,
             observacao: null,
+            formaPagamento: formaPagamento === 'CARTAO' ? formaPagamentoFormatada : 'PROMISSORIA', // Pré-seta pra cartão ou promissória
+            taxa: taxaPorParcela, // Taxa proporcional por parcela (ou 0 se preferir manter só na venda)
+            valorLiquido: valorParcelaLiquido,
           };
-          console.log(`Criando parcela ${index + 1}:`, parcela); // Depuração
-          return parcela;
         }),
       };
     }
@@ -183,4 +248,3 @@ export async function getTodasAsVendas() {
     return { status: 500, data: { error: 'Erro ao listar todas as vendas', details: error.message } };
   }
 }
-
