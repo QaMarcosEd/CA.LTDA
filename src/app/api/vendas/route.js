@@ -1,3 +1,4 @@
+// api/vendas/route.js
 import { createVenda, getVendasPorProduto, getTodasAsVendas } from './controller/vendasController';
 
 export async function POST(request) {

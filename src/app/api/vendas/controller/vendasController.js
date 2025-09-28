@@ -1,4 +1,4 @@
-// vendas/controller/vendasController.js
+// api/vendas/controller/vendasController.js
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -6,7 +6,9 @@ const prisma = new PrismaClient();
 // Função para criar uma nova venda no sistema.
 export async function createVenda(data) {
   try {
-    const { produtoId, quantidade, observacao, clienteNome, clienteId, valorTotal, isParcelado, numeroParcelas, entrada, dataVenda, formaPagamento, bandeira, modalidade } = data;
+    const { produtoId, quantidade, observacao, clienteNome, clienteId, valorTotal, dataVenda, formaPagamento, bandeira, modalidade } = data;
+    let { isParcelado, numeroParcelas, entrada } = data;  
+    // let { produtoId, quantidade, observacao, clienteNome, clienteId, valorTotal, isParcelado, numeroParcelas, entrada, dataVenda, formaPagamento, bandeira, modalidade } = data;
     console.log('Dados recebidos em createVenda:', data); // Depuração
 
     // Validar entrada
@@ -74,6 +76,14 @@ export async function createVenda(data) {
       return { status: 400, data: { error: 'Para parcelado sem promissória, use cartão com modalidade' } };
     }
 
+    // Se der BO so apagar esse IF -----------------------------------------------------------------------------------------------------------------
+    if (formaPagamento === 'CARTAO' && !isParcelado) {
+      // Força como parcelado de 1x para cartão à vista, com entrada=0 e parcela pendente
+      isParcelado = true;
+      numeroParcelas = 1;
+      entrada = 0;  // Nada pago na hora; o "pagamento" é a parcela pendente
+    }
+
     // Usar clienteId diretamente se fornecido; caso contrário, buscar ou criar cliente por clienteNome
     let finalClienteId = clienteId;
     if (!finalClienteId && clienteNome) {
@@ -118,50 +128,21 @@ export async function createVenda(data) {
       taxa,
       valorLiquido,
       status: isParcelado ? 'ABERTO' : 'QUITADO', // Inicial
-    }
-
-    // if (isParcelado) {
-    //   const entradaValor = parseFloat(entrada) || 0;
-    //   const valorRestante = parseFloat(valorTotal) - entradaValor;
-    //   const valorRestanteLiquido = valorLiquido - entradaValor; // Se taxa aplicada ao total
-    //   const valorBaseParcela = Math.floor((valorRestante / numeroParcelas) * 100) / 100;
-    //   const valorBaseParcelaLiquido = Math.floor((valorRestanteLiquido / numeroParcelas) * 100) / 100;
-
-    //   vendaData.parcelas = {
-    //     create: Array.from({ length: numeroParcelas }, (_, index) => {
-    //       const dataVencimento = new Date(parsedDataVenda);
-    //       dataVencimento.setDate(dataVencimento.getDate() + 30 * (index + 1));
-    //       const isLastParcela = index === numeroParcelas - 1;
-    //       const valorParcela = isLastParcela ? parseFloat((valorRestante - valorBaseParcela * (numeroParcelas - 1)).toFixed(2)) : parseFloat(valorBaseParcela.toFixed(2));
-    //       const valorParcelaLiquido = isLastParcela ? parseFloat((valorRestanteLiquido - valorBaseParcelaLiquido * (numeroParcelas - 1)).toFixed(2)) : parseFloat(valorBaseParcelaLiquido.toFixed(2));
-    //       return {
-    //         numeroParcela: index + 1,
-    //         valor: valorParcela,
-    //         valorPago: 0,
-    //         dataVencimento,
-    //         pago: false,
-    //         observacao: null,
-    //         formaPagamento: null, // Será setado ao pagar
-    //         taxa: 0,
-    //         valorLiquido: valorParcelaLiquido, // Inicial, ajustado se forma mudar
-    //       };
-    //     }),
-    //   };
-    // }
+    };
 
     if (isParcelado) {
       const entradaValor = parseFloat(entrada) || 0;
       const valorRestante = parseFloat(valorTotal) - entradaValor;
-      const valorRestanteLiquido = valorLiquido - entradaValor; // Valor líquido após taxa, menos entrada
+      const valorRestanteLiquido = valorLiquido - entradaValor; // Se taxa aplicada ao total
       const valorBaseParcela = Math.floor((valorRestante / numeroParcelas) * 100) / 100;
       const valorBaseParcelaLiquido = Math.floor((valorRestanteLiquido / numeroParcelas) * 100) / 100;
       const taxaPorParcela = formaPagamento === 'CARTAO' ? parseFloat((taxa / numeroParcelas).toFixed(2)) : 0; // Divide taxa total, ou 0 pra promissória
 
       vendaData.parcelas = {
         create: Array.from({ length: numeroParcelas }, (_, index) => {
-          const dataVencimento = new Date(parsedDataVenda);
-          // Ajusta prazo de recebimento: +30 dias por parcela (pode customizar, ex.: +31 pra 1ª, +61 pra 2ª, etc.)
-          dataVencimento.setDate(dataVencimento.getDate() + 30 * (index + 1));
+          const dataVencimento = new Date(parsedDataVenda); // Baseado em dataVenda
+          // dataVencimento.setDate(dataVencimento.getDate() + 30 * (index + 1)); // 30 dias entre parcelas -----------------------------------------------------------------------------------------------
+          dataVencimento.setMonth(dataVencimento.getMonth() + (index + 1));
           const isLastParcela = index === numeroParcelas - 1;
           const valorParcela = isLastParcela
             ? parseFloat((valorRestante - valorBaseParcela * (numeroParcelas - 1)).toFixed(2))
@@ -169,8 +150,7 @@ export async function createVenda(data) {
           const valorParcelaLiquido = isLastParcela
             ? parseFloat((valorRestanteLiquido - valorBaseParcelaLiquido * (numeroParcelas - 1)).toFixed(2))
             : parseFloat(valorBaseParcelaLiquido.toFixed(2));
-
-          return {
+          const parcela = {
             numeroParcela: index + 1,
             valor: valorParcela,
             valorPago: 0,
@@ -178,11 +158,14 @@ export async function createVenda(data) {
             pago: false,
             observacao: null,
             formaPagamento: formaPagamento === 'CARTAO' ? formaPagamentoFormatada : 'PROMISSORIA', // Pré-seta pra cartão ou promissória
-            taxa: taxaPorParcela, // Taxa proporcional por parcela (ou 0 se preferir manter só na venda)
+            taxa: taxaPorParcela,
             valorLiquido: valorParcelaLiquido,
           };
+          console.log(`Criando parcela ${index + 1}:`, parcela); // Depuração
+          return parcela;
         }),
       };
+      vendaData.status = 'ABERTO'; // Forçar status ABERTO para vendas parceladas
     }
 
     console.log('Dados da venda a serem criados:', vendaData); // Depuração
@@ -248,3 +231,4 @@ export async function getTodasAsVendas() {
     return { status: 500, data: { error: 'Erro ao listar todas as vendas', details: error.message } };
   }
 }
+
