@@ -2,48 +2,6 @@
 import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
-// export async function getAllProdutos({ marca, modelo, genero, tamanho, referencia, page = 1, limit = 10 }) {
-//   try {
-//     const where = {};
-//     if (marca) where.marca = { contains: marca };
-//     if (modelo) where.modelo = { contains: modelo };
-//     if (genero) where.genero = { contains: genero };
-//     if (tamanho) where.tamanho = { equals: parseInt(tamanho) };
-//     if (referencia) where.referencia = { contains: referencia };
-
-//     const total = await prisma.produto.count({ where });
-//     const produtos = await prisma.produto.findMany({
-//       where,
-//       skip: (page - 1) * limit,
-//       take: limit,
-//       orderBy: { id: 'desc' },
-//       select: {
-//         id: true,
-//         nome: true,
-//         tamanho: true,
-//         referencia: true,
-//         cor: true,
-//         quantidade: true,
-//         preco: true,
-//         genero: true,
-//         modelo: true,
-//         marca: true,
-//         disponivel: true,
-//         lote: true,
-//         dataRecebimento: true, // Inclui o novo campo
-//       },
-//     });
-
-//     return {
-//       data: produtos,
-//       totalPages: Math.ceil(total / limit),
-//     };
-//   } catch (error) {
-//     console.error(error);
-//     throw new Error('Erro ao buscar produtos');
-//   }
-// }
-
 export async function getAllProdutos({ marca, modelo, genero, tamanho, referencia, tipo, page = 1, limit = 10 }) {
   try {
     const where = {};
@@ -52,6 +10,8 @@ export async function getAllProdutos({ marca, modelo, genero, tamanho, referenci
     if (genero) where.genero = { contains: genero };
     if (tamanho) where.tamanho = { equals: parseInt(tamanho) };
     if (referencia) where.referencia = { contains: referencia };
+
+    console.log('Applied where filters:', where); // Log dos filtros aplicados
 
     // Se tipo for passado, faz contagem/groupBy
     if (tipo && ['genero', 'modelo', 'marca'].includes(tipo)) {
@@ -68,11 +28,19 @@ export async function getAllProdutos({ marca, modelo, genero, tamanho, referenci
     }
 
     // Busca normal com paginação e totals
-    const [totalAggregate, produtos] = await Promise.all([
+    const [totalAggregate, valorEstoqueRaw, produtos] = await Promise.all([
       prisma.produto.aggregate({
         where,
-        _sum: { quantidade: true }, // Soma total de quantidades
+        _sum: { quantidade: true },
       }),
+      prisma.$queryRawUnsafe(`SELECT COALESCE(SUM("preco" * "quantidade"), 0) as valor_total FROM "Produto" ${Object.keys(where).length > 0 ? `WHERE ${Object.entries(where).map(([key, value]) => {
+        if (typeof value === 'object' && value.contains) {
+          return `LOWER("${key}") LIKE LOWER('%${value.contains}%')`;
+        } else if (typeof value === 'object' && value.equals) {
+          return `"${key}" = ${value.equals}`;
+        }
+        return `"${key}" = ${value}`;
+      }).join(' AND ')}` : ''}`),
       prisma.produto.findMany({
         where,
         skip: (page - 1) * limit,
@@ -96,17 +64,27 @@ export async function getAllProdutos({ marca, modelo, genero, tamanho, referenci
       }),
     ]);
 
-    // Calcula valor total do estoque somando (preco * quantidade) pra cada produto
-    const valorTotalEstoque = produtos.reduce((sum, p) => sum + (p.preco * p.quantidade), 0).toFixed(2);
+    console.log('Generated SQL:', `SELECT COALESCE(SUM("preco" * "quantidade"), 0) as valor_total FROM "Produto" ${Object.keys(where).length > 0 ? `WHERE ${Object.entries(where).map(([key, value]) => {
+      if (typeof value === 'object' && value.contains) {
+        return `LOWER("${key}") LIKE LOWER('%${value.contains}%')`;
+      } else if (typeof value === 'object' && value.equals) {
+        return `"${key}" = ${value.equals}`;
+      }
+      return `"${key}" = ${value}`;
+    }).join(' AND ')}` : ''}`); // Log da query gerada
+    console.log('Raw Query Result:', valorEstoqueRaw); // Log do resultado
+    console.log('Sample Products:', produtos.slice(0, 5)); // Log de amostra dos produtos pra verificar gêneros
+
+    const valorTotalEstoque = valorEstoqueRaw[0]?.valor_total || 0;
 
     return {
       data: produtos,
-      totalPages: Math.ceil(totalAggregate._sum.quantidade / limit || 1), // Ajusta totalPages pela soma de quantidades
-      totalProdutos: totalAggregate._sum.quantidade || 0, // Total de unidades, não de registros
-      valorTotalEstoque,
+      totalPages: Math.ceil((totalAggregate._sum.quantidade || 0) / limit),
+      totalProdutos: totalAggregate._sum.quantidade || 0,
+      valorTotalEstoque: valorTotalEstoque.toFixed(2),
     };
   } catch (error) {
-    console.error(error);
+    console.error('Erro no getAllProdutos:', error);
     throw new Error('Erro ao buscar produtos');
   }
 }
