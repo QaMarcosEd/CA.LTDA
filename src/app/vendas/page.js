@@ -1,37 +1,254 @@
 // vendas/page.js
+// 'use client';
+
+// import { useState, useEffect } from 'react';
+// import Link from 'next/link';
+// import toast from 'react-hot-toast';
+// import { formatDateToBrazil } from '../../../utils/formatDate';
+// import ModalGerenciarParcelas from '@/components/ui/modals/ModalGerenciarParcelas';
+
+// export default function Vendas() {
+//   const [vendas, setVendas] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState(null);
+//   const [selectedVenda, setSelectedVenda] = useState(null);
+//   const [isModalOpen, setIsModalOpen] = useState(false);
+
+//   useEffect(() => {
+//     const fetchVendas = async () => {
+//       try {
+//         const res = await fetch('/api/vendas');
+//         if (!res.ok) throw new Error('Erro ao buscar vendas');
+//         const data = await res.json();
+//         console.log('Dados recebidos de /api/vendas:', data);
+//         setVendas(data);
+//       } catch (error) {
+//         console.error('Erro no fetchVendas:', error);
+//         setError('Erro ao carregar vendas');
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+//     fetchVendas();
+//   }, []);
+
+//   const getStatusVenda = (venda) => {
+//     if (venda.status === 'QUITADO') return 'Quitado';
+//     if (venda.status === 'ABERTO' && venda.parcelas?.length > 0) {
+//       const parcelasPagas = venda.parcelas.filter((p) => p.pago).length;
+//       if (venda.parcelas.length === 1) {
+//         return parcelasPagas === 0 ? 'Pendente (cai em ~30 dias)' : 'Quitado';
+//       }
+//       return `Parcelado (${parcelasPagas}/${venda.parcelas.length} pagas)`;
+//     }
+//     return venda.status;
+//   };
+
+//   const getValorPago = (venda) => {
+//     const entrada = parseFloat(venda.entrada) || 0;
+//     if (!venda.parcelas || venda.parcelas.length === 0) return entrada.toFixed(2);
+//     return (entrada + venda.parcelas.reduce((sum, p) => sum + parseFloat(p.valorPago || 0), 0)).toFixed(2);
+//   };
+
+//   const openParcelasModal = (venda) => {
+//     setSelectedVenda(venda);
+//     setIsModalOpen(true);
+//   };
+
+//   const closeParcelasModal = () => {
+//     setSelectedVenda(null);
+//     setIsModalOpen(false);
+//   };
+
+//   const marcarParcelaComoPaga = async (parcelaId, novoValorPago, observacao, formaPagamento, bandeira, modalidade, dataPagamento) => {
+//     try {
+//       const valor = parseFloat(novoValorPago);
+//       const parcela = selectedVenda.parcelas.find((p) => p.id === parcelaId);
+//       if (!parcela) throw new Error('Parcela não encontrada');
+//       if (valor <= 0) throw new Error('Valor pago deve ser maior que zero');
+
+//       const valorPagoExistente = parseFloat(parcela.valorPago || 0);
+//       const valorPendente = parseFloat(parcela.valor) - valorPagoExistente;
+//       if (valor > valorPendente) {
+//         throw new Error(`Valor pago (R$ ${valor.toFixed(2)}) não pode exceder o valor pendente (R$ ${valorPendente.toFixed(2)})`);
+//       }
+
+//       const novoValorPagoTotal = valorPagoExistente + valor;
+//       const isPago = novoValorPagoTotal >= parseFloat(parcela.valor) - 0.01;
+
+//       const res = await fetch(`/api/parcelas/${parcelaId}`, {
+//         method: 'PUT',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify({
+//           incrementoValorPago: valor.toFixed(2),
+//           observacao,
+//           pago: isPago,
+//           formaPagamentoParcela: formaPagamento,
+//           bandeira: formaPagamento === 'CARTAO' ? bandeira : undefined,
+//           modalidade: formaPagamento === 'CARTAO' ? modalidade : undefined,
+//           dataPagamento: dataPagamento || new Date().toISOString().split('T')[0], // Envia dataPagamento
+//         }),
+//       });
+
+//       if (!res.ok) {
+//         const errorData = await res.json();
+//         throw new Error(errorData.error || 'Erro ao marcar parcela como paga');
+//       }
+
+//       const updatedParcela = await res.json();
+//       setVendas((prevVendas) =>
+//         prevVendas.map((venda) =>
+//           venda.id === selectedVenda.id
+//             ? {
+//                 ...venda,
+//                 parcelas: venda.parcelas.map((p) =>
+//                   p.id === parcelaId ? { ...p, ...updatedParcela } : p
+//                 ),
+//                 status: updatedParcela.pago && venda.parcelas.every((p) => p.id === parcelaId ? updatedParcela.pago : p.pago) ? 'QUITADO' : venda.status,
+//               }
+//             : venda
+//         )
+//       );
+//       setSelectedVenda((prev) => ({
+//         ...prev,
+//         parcelas: prev.parcelas.map((p) =>
+//           p.id === parcelaId ? { ...p, ...updatedParcela } : p
+//         ),
+//         status: updatedParcela.pago && prev.parcelas.every((p) => p.id === parcelaId ? updatedParcela.pago : p.pago) ? 'QUITADO' : prev.status,
+//       }));
+//       toast.success('Parcela atualizada com sucesso! ✅');
+//     } catch (error) {
+//       console.error('Erro ao marcar parcela:', error);
+//       toast.error(error.message || 'Erro ao marcar parcela');
+//     }
+//   };
+
+//   if (loading) return (
+//     <div className="min-h-screen flex items-center justify-center bg-gray-50">
+//       <p className="text-lg font-medium font-poppins text-gray-600 animate-pulse">Carregando vendas...</p>
+//     </div>
+//   );
+
+//   if (error) return (
+//     <div className="min-h-screen flex items-center justify-center bg-gray-50">
+//       <p className="text-lg font-medium font-poppins text-red-600">{error}</p>
+//     </div>
+//   );
+
+//   return (
+//     <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
+//       <div className="max-w-7xl mx-auto">
+//         <h1 className="text-4xl font-bold font-poppins text-gray-900 mb-8 text-center">Vendas Realizadas</h1>
+
+//         <div className="overflow-x-auto shadow-lg rounded-lg bg-white">
+//           <table className="min-w-full divide-y divide-gray-200">
+//             <thead className="bg-gray-100">
+//               <tr>
+//                 {['ID', 'Produto', 'Quantidade', 'Valor Pago', 'Valor Total', 'Valor Líquido', 'Taxa', 'Forma Pagamento', 'Cliente', 'Data', 'Status', 'Ações'].map((title) => (
+//                   <th
+//                     key={title}
+//                     className="px-4 py-3 text-left text-xs font-semibold font-poppins text-gray-600 uppercase tracking-wider"
+//                   >
+//                     {title}
+//                   </th>
+//                 ))}
+//               </tr>
+//             </thead>
+//             <tbody className="divide-y divide-gray-200">
+//               {vendas.length > 0 ? (
+//                 vendas.map((v) => (
+//                   <tr key={v.id} className="hover:bg-gray-50 transition-colors">
+//                     <td className="px-4 py-3 text-sm font-poppins text-gray-900">{v.id}</td>
+//                     <td className="px-4 py-3 text-sm font-poppins text-gray-900">{v.produto?.nome || 'N/A'}</td>
+//                     <td className="px-4 py-3 text-sm font-poppins text-gray-900">{v.quantidade}</td>
+//                     <td className="px-4 py-3 text-sm font-poppins text-gray-900">R$ {getValorPago(v)}</td>
+//                     <td className="px-4 py-3 text-sm font-poppins text-gray-900">R$ {v.valorTotal.toFixed(2)}</td>
+//                     <td className="px-4 py-3 text-sm font-poppins text-gray-900">R$ {(v.valorLiquido || v.valorTotal).toFixed(2)}</td>
+//                     <td className="px-4 py-3 text-sm font-poppins text-gray-900">R$ {(v.taxa || 0).toFixed(2)}</td>
+//                     <td className="px-4 py-3 text-sm font-poppins text-gray-900">{v.formaPagamento?.replace('CARTAO_', '').replace('_', ' ').toLowerCase() || 'N/A'}</td>
+//                     <td className="px-4 py-3 text-sm font-poppins text-gray-900">{v.cliente?.nome || 'N/A'}</td>
+//                     <td className="px-4 py-3 text-sm font-poppins text-gray-900">
+//                       {formatDateToBrazil(v.dataVenda)}
+//                     </td>
+//                     <td className="px-4 py-3 text-sm font-poppins text-gray-900">{getStatusVenda(v)}</td>
+//                     <td className="px-4 py-3 text-sm font-poppins text-gray-900">
+//                       {v.parcelas && v.parcelas.length > 0 && (
+//                         <button
+//                           onClick={() => openParcelasModal(v)}
+//                           className="text-blue-600 hover:text-blue-800 font-poppins text-sm"
+//                         >
+//                           Ver Parcelas
+//                         </button>
+//                       )}
+//                     </td>
+//                   </tr>
+//                 ))
+//               ) : (
+//                 <tr>
+//                   <td colSpan="12" className="px-4 py-4 text-center text-sm font-poppins text-gray-500">
+//                     Nenhuma venda encontrada.
+//                   </td>
+//                 </tr>
+//               )}
+//             </tbody>
+//           </table>
+//         </div>
+
+//         <ModalGerenciarParcelas
+//           isOpen={isModalOpen}
+//           venda={selectedVenda}
+//           onClose={closeParcelasModal}
+//           marcarParcelaComoPaga={marcarParcelaComoPaga}
+//         />
+
+//         <div className="mt-8 flex justify-center">
+//           <Link
+//             href="/"
+//             className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium font-poppins rounded-md hover:bg-blue-700 transition-colors duration-200 shadow-md"
+//           >
+//             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+//             </svg>
+//             Voltar
+//           </Link>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { formatDateToBrazil } from '../../../utils/formatDate';
-import ParcelasModal from '@/components/ui/modals/ParcelasModal';
+import ModalGerenciarParcelas from '@/components/ui/modals/ModalGerenciarParcelas'; // Seu modal de parcelas
 
 export default function Vendas() {
   const [vendas, setVendas] = useState([]);
+  const [resumo, setResumo] = useState({ totalQuitado: 0, totalPendente: 0, porForma: {} });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedVenda, setSelectedVenda] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchVendas = async () => {
-      try {
-        const res = await fetch('/api/vendas');
-        if (!res.ok) throw new Error('Erro ao buscar vendas');
-        const data = await res.json();
-        console.log('Dados recebidos de /api/vendas:', data);
-        setVendas(data);
-      } catch (error) {
-        console.error('Erro no fetchVendas:', error);
-        setError('Erro ao carregar vendas');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchVendas();
-  }, []);
+  // Novos estados pra filtros
+  const [filtros, setFiltros] = useState({
+    formaPagamento: 'TODAS',
+    dataInicio: '',
+    dataFim: '',
+    status: 'TODAS',
+  });
 
+  // Função getValorPago definida antes de ser usada
+  const getValorPago = (venda) => {
+    const entrada = parseFloat(venda.entrada || 0);
+    const parcelasPagas = venda.parcelas?.reduce((sum, p) => sum + parseFloat(p.valorPago || 0), 0) || 0;
+    return (entrada + parcelasPagas).toFixed(2);
+  };
+
+  // Função getStatusVenda (assumindo que já existe ou similar)
   const getStatusVenda = (venda) => {
     if (venda.status === 'QUITADO') return 'Quitado';
     if (venda.status === 'ABERTO' && venda.parcelas?.length > 0) {
@@ -44,10 +261,38 @@ export default function Vendas() {
     return venda.status;
   };
 
-  const getValorPago = (venda) => {
-    const entrada = parseFloat(venda.entrada) || 0;
-    if (!venda.parcelas || venda.parcelas.length === 0) return entrada.toFixed(2);
-    return (entrada + venda.parcelas.reduce((sum, p) => sum + parseFloat(p.valorPago || 0), 0)).toFixed(2);
+  useEffect(() => {
+    fetchVendas();
+  }, [filtros]);
+
+  const fetchVendas = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (filtros.formaPagamento !== 'TODAS') params.append('formaPagamento', filtros.formaPagamento);
+      if (filtros.dataInicio) params.append('dataInicio', filtros.dataInicio);
+      if (filtros.dataFim) params.append('dataFim', filtros.dataFim);
+      if (filtros.status !== 'TODAS') params.append('status', filtros.status);
+
+      const res = await fetch(`/api/vendas?${params.toString()}`);
+      if (!res.ok) throw new Error('Erro ao buscar vendas');
+      const data = await res.json();
+      setVendas(data.vendas || []);
+      setResumo(data.resumo || {});
+    } catch (error) {
+      console.error('Erro no fetchVendas:', error);
+      setError('Erro ao carregar vendas');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const aplicarFiltros = () => {
+    fetchVendas();
+  };
+
+  const limparFiltros = () => {
+    setFiltros({ formaPagamento: 'TODAS', dataInicio: '', dataFim: '', status: 'TODAS' });
+    fetchVendas();
   };
 
   const openParcelasModal = (venda) => {
@@ -56,70 +301,24 @@ export default function Vendas() {
   };
 
   const closeParcelasModal = () => {
-    setSelectedVenda(null);
     setIsModalOpen(false);
+    setSelectedVenda(null);
+    fetchVendas(); // Recarrega pra atualizar status
   };
 
-  const marcarParcelaComoPaga = async (parcelaId, novoValorPago, observacao, formaPagamento, bandeira, modalidade, dataPagamento) => {
+  const marcarParcelaComoPaga = async (parcelaId, vendaId, valorPago, dataPagamento) => {
     try {
-      const valor = parseFloat(novoValorPago);
-      const parcela = selectedVenda.parcelas.find((p) => p.id === parcelaId);
-      if (!parcela) throw new Error('Parcela não encontrada');
-      if (valor <= 0) throw new Error('Valor pago deve ser maior que zero');
-
-      const valorPagoExistente = parseFloat(parcela.valorPago || 0);
-      const valorPendente = parseFloat(parcela.valor) - valorPagoExistente;
-      if (valor > valorPendente) {
-        throw new Error(`Valor pago (R$ ${valor.toFixed(2)}) não pode exceder o valor pendente (R$ ${valorPendente.toFixed(2)})`);
-      }
-
-      const novoValorPagoTotal = valorPagoExistente + valor;
-      const isPago = novoValorPagoTotal >= parseFloat(parcela.valor) - 0.01;
-
       const res = await fetch(`/api/parcelas/${parcelaId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          incrementoValorPago: valor.toFixed(2),
-          observacao,
-          pago: isPago,
-          formaPagamentoParcela: formaPagamento,
-          bandeira: formaPagamento === 'CARTAO' ? bandeira : undefined,
-          modalidade: formaPagamento === 'CARTAO' ? modalidade : undefined,
-          dataPagamento: dataPagamento || new Date().toISOString().split('T')[0], // Envia dataPagamento
-        }),
+        body: JSON.stringify({ valorPago, dataPagamento, pago: true }),
       });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Erro ao marcar parcela como paga');
-      }
-
-      const updatedParcela = await res.json();
-      setVendas((prevVendas) =>
-        prevVendas.map((venda) =>
-          venda.id === selectedVenda.id
-            ? {
-                ...venda,
-                parcelas: venda.parcelas.map((p) =>
-                  p.id === parcelaId ? { ...p, ...updatedParcela } : p
-                ),
-                status: updatedParcela.pago && venda.parcelas.every((p) => p.id === parcelaId ? updatedParcela.pago : p.pago) ? 'QUITADO' : venda.status,
-              }
-            : venda
-        )
-      );
-      setSelectedVenda((prev) => ({
-        ...prev,
-        parcelas: prev.parcelas.map((p) =>
-          p.id === parcelaId ? { ...p, ...updatedParcela } : p
-        ),
-        status: updatedParcela.pago && prev.parcelas.every((p) => p.id === parcelaId ? updatedParcela.pago : p.pago) ? 'QUITADO' : prev.status,
-      }));
-      toast.success('Parcela atualizada com sucesso! ✅');
+      if (!res.ok) throw new Error('Erro ao marcar parcela como paga');
+      closeParcelasModal();
+      toast.success('Parcela marcada como paga!');
     } catch (error) {
       console.error('Erro ao marcar parcela:', error);
-      toast.error(error.message || 'Erro ao marcar parcela');
+      toast.error('Erro ao marcar parcela');
     }
   };
 
@@ -138,17 +337,93 @@ export default function Vendas() {
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold font-poppins text-gray-900 mb-8 text-center">Vendas Realizadas</h1>
+        <h1 className="text-4xl font-bold font-poppins text-gray-900 mb-8 text-center">Gerenciador de Vendas</h1>
 
+        {/* Seção de Resumo */}
+        <div className="bg-white rounded-lg p-6 mb-8 shadow-lg">
+          <h2 className="text-xl font-bold mb-4">Resumo Geral</h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div className="bg-blue-50 p-4 rounded">
+              <p className="text-sm text-gray-600">Total Quitado</p>
+              <p className="text-2xl font-bold text-blue-600">R$ {resumo.totalQuitado}</p>
+            </div>
+            <div className="bg-red-50 p-4 rounded">
+              <p className="text-sm text-gray-600">Total Pendente</p>
+              <p className="text-2xl font-bold text-red-600">R$ {resumo.totalPendente}</p>
+            </div>
+            <div className="bg-green-50 p-4 rounded">
+              <p className="text-sm text-gray-600">PIX/Dinheiro</p>
+              <p className="text-2xl font-bold text-green-600">R$ {(resumo.porForma.PIX + resumo.porForma.DINHEIRO).toFixed(2)}</p>
+            </div>
+            <div className="bg-purple-50 p-4 rounded">
+              <p className="text-sm text-gray-600">Cartão/Promissória</p>
+              <p className="text-2xl font-bold text-purple-600">R$ {(resumo.porForma.CARTAO + resumo.porForma.PROMISSORIA).toFixed(2)}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Seção de Filtros */}
+        <div className="bg-white rounded-lg p-6 mb-8 shadow">
+          <h2 className="text-xl font-bold mb-4">Filtros</h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Forma de Pagamento</label>
+              <select
+                value={filtros.formaPagamento}
+                onChange={(e) => setFiltros({ ...filtros, formaPagamento: e.target.value })}
+                className="border p-2 w-full rounded"
+              >
+                <option value="TODAS">Todas</option>
+                <option value="DINHEIRO">Dinheiro à vista</option>
+                <option value="PIX">PIX à vista</option>
+                <option value="CARTAO">Cartão</option>
+                <option value="PROMISSORIA">Promissória</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Data Inicial</label>
+              <input
+                type="date"
+                value={filtros.dataInicio}
+                onChange={(e) => setFiltros({ ...filtros, dataInicio: e.target.value })}
+                className="border p-2 w-full rounded"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Data Final</label>
+              <input
+                type="date"
+                value={filtros.dataFim}
+                onChange={(e) => setFiltros({ ...filtros, dataFim: e.target.value })}
+                className="border p-2 w-full rounded"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Status</label>
+              <select
+                value={filtros.status}
+                onChange={(e) => setFiltros({ ...filtros, status: e.target.value })}
+                className="border p-2 w-full rounded"
+              >
+                <option value="TODAS">Todas</option>
+                <option value="QUITADO">Quitado</option>
+                <option value="ABERTO">Aberto</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex justify-end space-x-2 mt-4">
+            <button onClick={aplicarFiltros} className="bg-blue-600 text-white px-4 py-2 rounded">Aplicar</button>
+            <button onClick={limparFiltros} className="bg-gray-500 text-white px-4 py-2 rounded">Limpar</button>
+          </div>
+        </div>
+
+        {/* Tabela de Vendas */}
         <div className="overflow-x-auto shadow-lg rounded-lg bg-white">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-100">
               <tr>
-                {['ID', 'Produto', 'Quantidade', 'Valor Pago', 'Valor Total', 'Valor Líquido', 'Taxa', 'Forma Pagamento', 'Cliente', 'Data', 'Status', 'Ações'].map((title) => (
-                  <th
-                    key={title}
-                    className="px-4 py-3 text-left text-xs font-semibold font-poppins text-gray-600 uppercase tracking-wider"
-                  >
+                {['ID', 'Produto', 'Quantidade', 'Valor Pago', 'Valor Pendente', 'Valor Total', 'Forma Pagamento', 'Cliente', 'Data', 'Status', 'Ações'].map((title) => (
+                  <th key={title} className="px-4 py-3 text-left text-xs font-semibold font-poppins text-gray-600 uppercase tracking-wider">
                     {title}
                   </th>
                 ))}
@@ -156,37 +431,35 @@ export default function Vendas() {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {vendas.length > 0 ? (
-                vendas.map((v) => (
-                  <tr key={v.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 text-sm font-poppins text-gray-900">{v.id}</td>
-                    <td className="px-4 py-3 text-sm font-poppins text-gray-900">{v.produto?.nome || 'N/A'}</td>
-                    <td className="px-4 py-3 text-sm font-poppins text-gray-900">{v.quantidade}</td>
-                    <td className="px-4 py-3 text-sm font-poppins text-gray-900">R$ {getValorPago(v)}</td>
-                    <td className="px-4 py-3 text-sm font-poppins text-gray-900">R$ {v.valorTotal.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-sm font-poppins text-gray-900">R$ {(v.valorLiquido || v.valorTotal).toFixed(2)}</td>
-                    <td className="px-4 py-3 text-sm font-poppins text-gray-900">R$ {(v.taxa || 0).toFixed(2)}</td>
-                    <td className="px-4 py-3 text-sm font-poppins text-gray-900">{v.formaPagamento?.replace('CARTAO_', '').replace('_', ' ').toLowerCase() || 'N/A'}</td>
-                    <td className="px-4 py-3 text-sm font-poppins text-gray-900">{v.cliente?.nome || 'N/A'}</td>
-                    <td className="px-4 py-3 text-sm font-poppins text-gray-900">
-                      {formatDateToBrazil(v.dataVenda)}
-                    </td>
-                    <td className="px-4 py-3 text-sm font-poppins text-gray-900">{getStatusVenda(v)}</td>
-                    <td className="px-4 py-3 text-sm font-poppins text-gray-900">
-                      {v.parcelas && v.parcelas.length > 0 && (
-                        <button
-                          onClick={() => openParcelasModal(v)}
-                          className="text-blue-600 hover:text-blue-800 font-poppins text-sm"
-                        >
-                          Ver Parcelas
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))
+                vendas.map((v) => {
+                  const valorPago = getValorPago(v); // Usa a função definida
+                  const valorPendente = (parseFloat(v.valorTotal) - parseFloat(valorPago)).toFixed(2);
+                  return (
+                    <tr key={v.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 text-sm font-poppins text-gray-900">{v.id}</td>
+                      <td className="px-4 py-3 text-sm font-poppins text-gray-900">{v.produto?.nome || 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm font-poppins text-gray-900">{v.quantidade}</td>
+                      <td className="px-4 py-3 text-sm font-poppins text-gray-900">R$ {valorPago}</td>
+                      <td className="px-4 py-3 text-sm font-poppins text-red-600">R$ {valorPendente}</td>
+                      <td className="px-4 py-3 text-sm font-poppins text-gray-900">R$ {v.valorTotal.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-sm font-poppins text-gray-900">{v.formaPagamento?.replace('CARTAO_', '').replace('_', ' ').toLowerCase() || 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm font-poppins text-gray-900">{v.cliente?.nome || 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm font-poppins text-gray-900">{formatDateToBrazil(v.dataVenda)}</td>
+                      <td className="px-4 py-3 text-sm font-poppins text-gray-900">{getStatusVenda(v)}</td>
+                      <td className="px-4 py-3 text-sm font-poppins text-gray-900">
+                        {v.parcelas && v.parcelas.length > 0 && (
+                          <button onClick={() => openParcelasModal(v)} className="text-blue-600 hover:text-blue-800 font-poppins text-sm">
+                            Ver Parcelas
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
-                  <td colSpan="12" className="px-4 py-4 text-center text-sm font-poppins text-gray-500">
-                    Nenhuma venda encontrada.
+                  <td colSpan="11" className="px-4 py-4 text-center text-sm font-poppins text-gray-500">
+                    Nenhuma venda encontrada.{filtros.dataInicio && ' Tente ajustar os filtros.'}
                   </td>
                 </tr>
               )}
@@ -194,7 +467,7 @@ export default function Vendas() {
           </table>
         </div>
 
-        <ParcelasModal
+        <ModalGerenciarParcelas
           isOpen={isModalOpen}
           venda={selectedVenda}
           onClose={closeParcelasModal}
@@ -202,10 +475,7 @@ export default function Vendas() {
         />
 
         <div className="mt-8 flex justify-center">
-          <Link
-            href="/"
-            className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium font-poppins rounded-md hover:bg-blue-700 transition-colors duration-200 shadow-md"
-          >
+          <Link href="/" className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium font-poppins rounded-md hover:bg-blue-700 transition-colors duration-200 shadow-md">
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
             </svg>
@@ -216,4 +486,3 @@ export default function Vendas() {
     </div>
   );
 }
-

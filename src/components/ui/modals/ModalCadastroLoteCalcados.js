@@ -4,7 +4,7 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
-export default function ModalLote({ isOpen, onClose, onSubmit }) {
+export default function ModalCadastroLoteCalçados({ isOpen, onClose, onSubmit }) {
   const [genericos, setGenericos] = useState({
     nome: '',
     referencia: '',

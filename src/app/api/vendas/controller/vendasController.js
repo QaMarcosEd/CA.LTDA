@@ -213,22 +213,265 @@ export async function getVendasPorProduto(produtoId) {
   }
 }
 
-// Função para listar todas as vendas registradas no sistema.
-export async function getTodasAsVendas() {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// export async function getTodasAsVendas(filtros = {}) {
+//   try {
+//     const { formaPagamento, dataInicio, dataFim, status } = filtros;
+//     const whereClause = {
+//       dataVenda: {},
+//     };
+
+//     // Filtro por período
+//     if (dataInicio) {
+//       whereClause.dataVenda.gte = new Date(dataInicio);
+//     }
+//     if (dataFim) {
+//       whereClause.dataVenda.lte = new Date(dataFim);
+//     }
+
+//     // Filtro por status
+//     if (status && status !== 'TODAS') {
+//       whereClause.status = status;
+//     }
+
+//     // Filtro por forma de pagamento (ajustado)
+//     if (formaPagamento && formaPagamento !== 'TODAS') {
+//       if (formaPagamento === 'CARTAO') {
+//         // Tenta sem mode primeiro, ou usa startsWith pra ser mais seguro
+//         whereClause.formaPagamento = { contains: 'CARTAO' }; // Remove mode, testa sem insensitive
+//         console.log('Filtro Cartão aplicado: ', whereClause.formaPagamento); // Log pra depuração
+//       } else {
+//         whereClause.formaPagamento = { equals: formaPagamento };
+//       }
+//     }
+
+//     console.log('Where Clause completa:', whereClause); // Log pra ver a query
+
+//     const vendas = await prisma.venda.findMany({
+//       where: whereClause,
+//       orderBy: { dataVenda: 'desc' },
+//       include: {
+//         produto: true,
+//         cliente: { select: { nome: true } },
+//         parcelas: true,
+//       },
+//     });
+
+//     // Calcula resumo (totais)
+//     const resumo = calcularResumoVendas(vendas);
+
+//     console.log('Vendas filtradas:', vendas); // Adicionei log pra depuração
+//     return { status: 200, data: { vendas, resumo } };
+//   } catch (error) {
+//     console.error('Erro ao listar vendas filtradas:', error); // Log detalhado do erro
+//     return { status: 500, data: { error: 'Erro ao listar vendas: ' + error.message } };
+//   }
+// }
+
+
+
+// export async function getTodasAsVendas(filtros = {}) {
+//   try {
+//     const { formaPagamento, dataInicio, dataFim, status, resumo } = filtros;
+//     const whereClause = {
+//       dataVenda: {},
+//     };
+
+//     // Filtro por período
+//     if (dataInicio) {
+//       whereClause.dataVenda.gte = new Date(dataInicio);
+//     }
+//     if (dataFim) {
+//       whereClause.dataVenda.lte = new Date(dataFim);
+//     }
+
+//     // Filtro por status
+//     if (status && status !== 'TODAS') {
+//       whereClause.status = status;
+//     }
+
+//     // Filtro por forma de pagamento (ajustado)
+//     if (formaPagamento && formaPagamento !== 'TODAS') {
+//       if (formaPagamento === 'CARTAO') {
+//         // Tenta sem mode primeiro, ou usa startsWith pra ser mais seguro
+//         whereClause.formaPagamento = { contains: 'CARTAO' }; // Remove mode, testa sem insensitive
+//         console.log('Filtro Cartão aplicado: ', whereClause.formaPagamento); // Log pra depuração
+//       } else {
+//         whereClause.formaPagamento = { equals: formaPagamento };
+//       }
+//     }
+
+//     const vendas = await prisma.venda.findMany({
+//       where: whereClause,
+//       orderBy: { dataVenda: 'desc' },
+//       include: {
+//         produto: true,
+//         cliente: { select: { nome: true } },
+//         parcelas: true,
+//       },
+//     });
+
+//     const resumoData = calcularResumoVendas(vendas);
+
+//     if (resumo) {
+//       return { status: 200, data: { resumo: resumoData } };  // Só resumo se ?resumo=true
+//     }
+
+//     return { status: 200, data: { vendas, resumo: resumoData } };
+//   } catch (error) {
+//     console.error('Erro ao listar vendas filtradas:', error);
+//     return { status: 500, data: { error: 'Erro ao listar vendas: ' + error.message } };
+//   }
+// }
+
+
+
+
+export async function getTodasAsVendas(filtros = {}) {
   try {
+    const { formaPagamento, dataInicio, dataFim, status, resumo } = filtros;
+    const whereClause = {
+      dataVenda: {},
+    };
+
+    if (dataInicio) whereClause.dataVenda.gte = new Date(dataInicio);
+    if (dataFim) whereClause.dataVenda.lte = new Date(dataFim);
+    if (status && status !== 'TODAS') whereClause.status = status;
+    if (formaPagamento && formaPagamento !== 'TODAS') {
+      if (formaPagamento === 'CARTAO') {
+        whereClause.formaPagamento = { contains: 'CARTAO' };
+      } else {
+        whereClause.formaPagamento = { equals: formaPagamento };
+      }
+    }
+
+    console.log('Where Clause completa:', whereClause);
+
     const vendas = await prisma.venda.findMany({
-      orderBy: { dataVenda: 'desc' }, // Alterado de 'data' para 'dataVenda'
+      where: whereClause,
+      orderBy: { dataVenda: 'desc' },
       include: {
         produto: true,
         cliente: { select: { nome: true } },
         parcelas: true,
       },
     });
-    console.log('Vendas retornadas pelo Prisma:', vendas);
-    return { status: 200, data: vendas };
+
+    const resumoData = calcularResumoVendas(vendas);
+
+    if (resumo) {
+      return { status: 200, data: { resumo: resumoData } };
+    }
+
+    return { status: 200, data: { vendas, resumo: resumoData } };
   } catch (error) {
-    console.error('Erro ao listar todas as vendas:', error);
-    return { status: 500, data: { error: 'Erro ao listar todas as vendas', details: error.message } };
+    console.error('Erro ao listar vendas filtradas:', error);
+    return { status: 500, data: { error: 'Erro ao listar vendas: ' + error.message } };
   }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Função auxiliar pra resumo
+function calcularResumoVendas(vendas) {
+  let totalQuitado = 0;
+  let totalPendente = 0;
+  let porForma = { DINHEIRO: 0, PIX: 0, CARTAO: 0, PROMISSORIA: 0 };
+
+  vendas.forEach((venda) => {
+    const valorPago = parseFloat(venda.entrada || 0) + (venda.parcelas?.reduce((sum, p) => sum + parseFloat(p.valorPago || 0), 0) || 0);
+    const valorTotal = parseFloat(venda.valorTotal);
+    const pendente = valorTotal - valorPago;
+
+    totalQuitado += valorPago;
+    totalPendente += pendente;
+
+    if (venda.formaPagamento.startsWith('DINHEIRO')) porForma.DINHEIRO += valorPago;
+    else if (venda.formaPagamento.startsWith('PIX')) porForma.PIX += valorPago;
+    else if (venda.formaPagamento.startsWith('CARTAO')) porForma.CARTAO += valorPago;
+    else if (venda.formaPagamento === 'PROMISSORIA') porForma.PROMISSORIA += valorPago;
+  });
+
+  return { totalQuitado: totalQuitado.toFixed(2), totalPendente: totalPendente.toFixed(2), porForma };
 }
 

@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import ModalVenda from '@/components/ui/modals/ModalRegistroBaixa';
 import ModalRegistroBaixa from '@/components/ui/modals/ModalRegistroBaixa';
 import ConfirmDeleteModal from '../components/ui/modals/ConfirmDeleteModal';
-import ModalLote from '@/components/ui/modals/ModalLote'; // Novo modal
+// import ModalLote from '@/components/ui/modals/ModalCadastroLoteCalcados'; // Novo modal
+import ModalCadastroLoteCalçados from '@/components/ui/modals/ModalCadastroLoteCalcados';
 import toast from 'react-hot-toast';
 
 export default function Home() {
@@ -322,7 +322,13 @@ export default function Home() {
         />
 
         {/* Modal de lote */}
-        <ModalLote
+        {/* <ModalLote
+          isOpen={loteModalOpen}
+          onClose={() => setLoteModalOpen(false)}
+          onSubmit={handleSubmitLote}
+        /> */}
+
+        <ModalCadastroLoteCalçados
           isOpen={loteModalOpen}
           onClose={() => setLoteModalOpen(false)}
           onSubmit={handleSubmitLote}

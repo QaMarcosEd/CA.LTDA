@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
-export default function ParcelasModal({ isOpen, venda, onClose, marcarParcelaComoPaga }) {
+export default function ModalGerenciarParcelas({ isOpen, venda, onClose, marcarParcelaComoPaga }) {
   const [taxasCartao, setTaxasCartao] = useState([]);
   const [formasPagamento, setFormasPagamento] = useState({}); // { [parcelaId]: { forma, bandeira, modalidade, taxa, valorLiquido } }
 

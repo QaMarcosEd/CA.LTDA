@@ -16,6 +16,7 @@
     "chartjs-plugin-datalabels": "^2.2.0",
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
+    "lodash": "^4.17.21",
     "next": "15.5.2",
     "prisma": "^6.15.0",
     "react": "19.1.0",
