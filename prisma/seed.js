@@ -5,57 +5,57 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🧹 Limpando tabelas...');
 
-  // Limpa produtos e taxas de cartão antes de inserir
-  await prisma.produto.deleteMany();
+  // // Limpa produtos e taxas de cartão antes de inserir
+  // await prisma.produto.deleteMany();
   await prisma.taxaCartao.deleteMany();
 
-  const marcas = ['Mississipi', 'Constance', 'Modare', 'Olympikus', 'Moleca'];
-  const cores = ['Preto', 'Branco', 'Vermelho', 'Azul', 'Rosa', 'Marrom'];
-  const modelos = Object.values(Modelo);
-  const generos = Object.values(Genero);
+  // const marcas = ['Mississipi', 'Constance', 'Modare', 'Olympikus', 'Moleca'];
+  // const cores = ['Preto', 'Branco', 'Vermelho', 'Azul', 'Rosa', 'Marrom'];
+  // const modelos = Object.values(Modelo);
+  // const generos = Object.values(Genero);
 
-  // Função pra gerar data aleatória
-  function gerarDataAleatoria() {
-    const start = new Date('2024-01-01');
-    const end = new Date('2025-09-24');
-    const date = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
-    return date.toISOString().split('T')[0];
-  }
+  // // Função pra gerar data aleatória
+  // function gerarDataAleatoria() {
+  //   const start = new Date('2024-01-01');
+  //   const end = new Date('2025-09-24');
+  //   const date = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+  //   return date.toISOString().split('T')[0];
+  // }
 
-  const produtos = [];
+  // const produtos = [];
 
-  for (const marca of marcas) {
-    const dataRecebimento = gerarDataAleatoria();
-    for (let tamanho = 33; tamanho <= 44; tamanho++) {
-      for (let i = 0; i < 2; i++) {
-        const modelo = modelos[Math.floor(Math.random() * modelos.length)];
-        const genero = generos[Math.floor(Math.random() * generos.length)];
-        const cor = cores[Math.floor(Math.random() * cores.length)];
-        const quantidade = Math.floor(Math.random() * 4) + 1;
-        const preco = parseFloat((Math.random() * 200 + 50).toFixed(2));
+  // for (const marca of marcas) {
+  //   const dataRecebimento = gerarDataAleatoria();
+  //   for (let tamanho = 33; tamanho <= 44; tamanho++) {
+  //     for (let i = 0; i < 2; i++) {
+  //       const modelo = modelos[Math.floor(Math.random() * modelos.length)];
+  //       const genero = generos[Math.floor(Math.random() * generos.length)];
+  //       const cor = cores[Math.floor(Math.random() * cores.length)];
+  //       const quantidade = Math.floor(Math.random() * 4) + 1;
+  //       const preco = parseFloat((Math.random() * 200 + 50).toFixed(2));
 
-        produtos.push({
-          nome: `${marca} ${modelo} ${tamanho}`,
-          tamanho,
-          referencia: `${marca.slice(0, 3).toUpperCase()}-${tamanho}-${i + 1}`,
-          cor,
-          quantidade,
-          preco,
-          genero,
-          modelo,
-          marca,
-          disponivel: quantidade > 0,
-          lote: `Lote-${marca.slice(0, 3).toUpperCase()}-${tamanho}-${i + 1}`,
-          dataRecebimento: new Date(dataRecebimento),
-        });
-      }
-    }
-  }
+  //       produtos.push({
+  //         nome: `${marca} ${modelo} ${tamanho}`,
+  //         tamanho,
+  //         referencia: `${marca.slice(0, 3).toUpperCase()}-${tamanho}-${i + 1}`,
+  //         cor,
+  //         quantidade,
+  //         preco,
+  //         genero,
+  //         modelo,
+  //         marca,
+  //         disponivel: quantidade > 0,
+  //         lote: `Lote-${marca.slice(0, 3).toUpperCase()}-${tamanho}-${i + 1}`,
+  //         dataRecebimento: new Date(dataRecebimento),
+  //       });
+  //     }
+  //   }
+  // }
 
-  console.log(`👟 Criando ${produtos.length} produtos...`);
-  for (const produto of produtos) {
-    await prisma.produto.create({ data: produto });
-  }
+  // console.log(`👟 Criando ${produtos.length} produtos...`);
+  // for (const produto of produtos) {
+  //   await prisma.produto.create({ data: produto });
+  // }
 
   console.log('💳 Criando taxas de cartão...');
   const taxas = [

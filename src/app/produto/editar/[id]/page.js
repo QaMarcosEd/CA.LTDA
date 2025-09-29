@@ -1,3 +1,4 @@
+// /produto/editar/[id]/page.js
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -5,7 +6,20 @@ import { useRouter, useParams } from 'next/navigation';
 import { format } from 'date-fns';
 
 export default function Editar() {
-  const [form, setForm] = useState({ nome: '', tamanho: '', referencia: '', cor: '', quantidade: '', preco: '', genero: '', modelo: '', marca: '', disponivel: true, dataRecebimento: '' });
+  const [form, setForm] = useState({
+    nome: '',
+    tamanho: '',
+    referencia: '',
+    cor: '',
+    quantidade: '',
+    preco: '',
+    genero: '',
+    modelo: '',
+    marca: '',
+    disponivel: true,
+    dataRecebimento: '',
+    lote: '' // Adiciona lote
+  });
   const router = useRouter();
   const { id } = useParams();
 
@@ -30,7 +44,8 @@ useEffect(() => {
           modelo: produto.modelo || '',
           marca: produto.marca || '',
           disponivel: produto.quantidade > 0,
-          dataRecebimento: produto.dataRecebimento ? format(new Date(produto.dataRecebimento), 'yyyy-MM-dd') : ''
+          dataRecebimento: produto.dataRecebimento ? format(new Date(produto.dataRecebimento), 'yyyy-MM-dd') : '',
+          lote: produto.lote || '' // Adiciona lote
         })
       })
       .catch(err => console.error('Erro ao carregar produto:', err))
@@ -69,7 +84,8 @@ const handleSubmit = async (e) => {
     modelo: form.modelo,
     marca: form.marca,
     disponivel: parseInt(form.quantidade) > 0,
-    dataRecebimento: new Date(form.dataRecebimento)
+    dataRecebimento: new Date(form.dataRecebimento),
+    lote: form.lote // Adiciona lote
   };
   console.log('Antes do fetch, dados:', data); // Log antes do fetch
   const response = await fetch('/api/produtos', {
@@ -179,6 +195,13 @@ const handleSubmit = async (e) => {
             name="marca"
             value={form.marca}
             placeholder="Marca"
+            onChange={handleChange}
+            className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200 placeholder-gray-500 text-gray-800 text-base"
+          />
+          <input
+            name="lote"
+            value={form.lote}
+            placeholder="Lote"
             onChange={handleChange}
             className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200 placeholder-gray-500 text-gray-800 text-base"
           />
