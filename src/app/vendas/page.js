@@ -1,21 +1,18 @@
-// app/vendas/page.js
 'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { formatDateToBrazil } from '../../../utils/formatDate';
-import ModalGerenciarParcelas from '@/components/ui/modals/ModalGerenciarParcelas'; // Seu modal de parcelas
+import ModalGerenciarParcelas from '@/components/ui/modals/ModalGerenciarParcelas';
 
 export default function Vendas() {
   const [vendas, setVendas] = useState([]);
-  const [resumo, setResumo] = useState({ totalQuitado: 0, totalPendente: 0, porForma: {} });
+  const [resumo, setResumo] = useState({ totalQuitado: '0.00', totalPendente: '0.00', porForma: { PIX: 0, DINHEIRO: 0, CARTAO: 0, PROMISSORIA: 0 } });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedVenda, setSelectedVenda] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // Novos estados pra filtros
   const [filtros, setFiltros] = useState({
     formaPagamento: 'TODAS',
     dataInicio: '',
@@ -23,14 +20,12 @@ export default function Vendas() {
     status: 'TODAS',
   });
 
-  // Função getValorPago definida antes de ser usada
   const getValorPago = (venda) => {
     const entrada = parseFloat(venda.entrada || 0);
     const parcelasPagas = venda.parcelas?.reduce((sum, p) => sum + parseFloat(p.valorPago || 0), 0) || 0;
     return (entrada + parcelasPagas).toFixed(2);
   };
 
-  // Função getStatusVenda (assumindo que já existe ou similar)
   const getStatusVenda = (venda) => {
     if (venda.status === 'QUITADO') return 'Quitado';
     if (venda.status === 'ABERTO' && venda.parcelas?.length > 0) {
@@ -41,6 +36,14 @@ export default function Vendas() {
       return `Parcelado (${parcelasPagas}/${venda.parcelas.length} pagas)`;
     }
     return venda.status;
+  };
+
+  // Função para formatar forma de pagamento na tabela
+  const formatFormaPagamento = (venda) => {
+    if (venda.formaPagamento === 'PROMISSORIA' && venda.entrada > 0 && venda.formaPagamentoEntrada) {
+      return `${venda.formaPagamentoEntrada} (entrada) + Promissória`;
+    }
+    return venda.formaPagamento?.replace('CARTAO_', '').replace('_', ' ').toLowerCase() || 'N/A';
   };
 
   useEffect(() => {
@@ -59,7 +62,7 @@ export default function Vendas() {
       if (!res.ok) throw new Error('Erro ao buscar vendas');
       const data = await res.json();
       setVendas(data.vendas || []);
-      setResumo(data.resumo || {});
+      setResumo(data.resumo || { totalQuitado: '0.00', totalPendente: '0.00', porForma: { PIX: 0, DINHEIRO: 0, CARTAO: 0, PROMISSORIA: 0 } });
     } catch (error) {
       console.error('Erro no fetchVendas:', error);
       setError('Erro ao carregar vendas');
@@ -74,7 +77,6 @@ export default function Vendas() {
 
   const limparFiltros = () => {
     setFiltros({ formaPagamento: 'TODAS', dataInicio: '', dataFim: '', status: 'TODAS' });
-    fetchVendas();
   };
 
   const openParcelasModal = (venda) => {
@@ -85,40 +87,40 @@ export default function Vendas() {
   const closeParcelasModal = () => {
     setIsModalOpen(false);
     setSelectedVenda(null);
-    fetchVendas(); // Recarrega pra atualizar status
+    fetchVendas();
   };
 
   const marcarParcelaComoPaga = async (
-  parcelaId,
-  incrementoValorPago,
-  observacao,
-  formaPagamentoParcela,
-  bandeira,
-  modalidade,
-  dataPagamento
-) => {
-  try {
-    const res = await fetch(`/api/parcelas/${parcelaId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        incrementoValorPago,
-        observacao,
-        pago: true,
-        formaPagamentoParcela,
-        bandeira,
-        modalidade,
-        dataPagamento
-      }),
-    });
-    if (!res.ok) throw new Error('Erro ao marcar parcela como paga');
-    closeParcelasModal();
-    toast.success('Parcela marcada como paga!');
-  } catch (error) {
-    console.error('Erro ao marcar parcela:', error);
-    toast.error('Erro ao marcar parcela');
-  }
-};
+    parcelaId,
+    incrementoValorPago,
+    observacao,
+    formaPagamentoParcela,
+    bandeira,
+    modalidade,
+    dataPagamento
+  ) => {
+    try {
+      const res = await fetch(`/api/parcelas/${parcelaId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          incrementoValorPago,
+          observacao,
+          pago: true,
+          formaPagamentoParcela,
+          bandeira,
+          modalidade,
+          dataPagamento,
+        }),
+      });
+      if (!res.ok) throw new Error('Erro ao marcar parcela como paga');
+      closeParcelasModal();
+      toast.success('Parcela marcada como paga!');
+    } catch (error) {
+      console.error('Erro ao marcar parcela:', error);
+      toast.error('Erro ao marcar parcela');
+    }
+  };
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -151,11 +153,11 @@ export default function Vendas() {
             </div>
             <div className="bg-green-50 p-4 rounded">
               <p className="text-sm text-gray-600">PIX/Dinheiro</p>
-              <p className="text-2xl font-bold text-green-600">R$ {(resumo.porForma.PIX + resumo.porForma.DINHEIRO).toFixed(2)}</p>
+              <p className="text-2xl font-bold text-green-600">R$ {((resumo.porForma?.PIX || 0) + (resumo.porForma?.DINHEIRO || 0)).toFixed(2)}</p>
             </div>
             <div className="bg-purple-50 p-4 rounded">
-              <p className="text-sm text-gray-600">Cartão/Promissória</p>
-              <p className="text-2xl font-bold text-purple-600">R$ {(resumo.porForma.CARTAO + resumo.porForma.PROMISSORIA).toFixed(2)}</p>
+              <p className="text-sm text-gray-600">Cartão de Crédito/Débito</p>
+              <p className="text-2xl font-bold text-purple-600">R$ {((resumo.porForma?.CARTAO || 0) + (resumo.porForma?.PROMISSORIA || 0)).toFixed(2)}</p>
             </div>
           </div>
         </div>
@@ -209,6 +211,20 @@ export default function Vendas() {
               </select>
             </div>
           </div>
+          <div className="mt-4 flex gap-4">
+            <button
+              onClick={aplicarFiltros}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Aplicar Filtros
+            </button>
+            <button
+              onClick={limparFiltros}
+              className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+            >
+              Limpar Filtros
+            </button>
+          </div>
         </div>
 
         {/* Tabela de Vendas */}
@@ -226,7 +242,7 @@ export default function Vendas() {
             <tbody className="divide-y divide-gray-200">
               {vendas.length > 0 ? (
                 vendas.map((v) => {
-                  const valorPago = getValorPago(v); // Usa a função definida
+                  const valorPago = getValorPago(v);
                   const valorPendente = (parseFloat(v.valorTotal) - parseFloat(valorPago)).toFixed(2);
                   return (
                     <tr key={v.id} className="hover:bg-gray-50 transition-colors">
@@ -236,7 +252,7 @@ export default function Vendas() {
                       <td className="px-4 py-3 text-sm font-poppins text-gray-900">R$ {valorPago}</td>
                       <td className="px-4 py-3 text-sm font-poppins text-red-600">R$ {valorPendente}</td>
                       <td className="px-4 py-3 text-sm font-poppins text-gray-900">R$ {v.valorTotal.toFixed(2)}</td>
-                      <td className="px-4 py-3 text-sm font-poppins text-gray-900">{v.formaPagamento?.replace('CARTAO_', '').replace('_', ' ').toLowerCase() || 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm font-poppins text-gray-900">{formatFormaPagamento(v)}</td>
                       <td className="px-4 py-3 text-sm font-poppins text-gray-900">{v.cliente?.nome || 'N/A'}</td>
                       <td className="px-4 py-3 text-sm font-poppins text-gray-900">{formatDateToBrazil(v.dataVenda)}</td>
                       <td className="px-4 py-3 text-sm font-poppins text-gray-900">{getStatusVenda(v)}</td>
@@ -253,7 +269,7 @@ export default function Vendas() {
               ) : (
                 <tr>
                   <td colSpan="11" className="px-4 py-4 text-center text-sm font-poppins text-gray-500">
-                    Nenhuma venda encontrada.{filtros.dataInicio && ' Tente ajustar os filtros.'}
+                    Nenhuma venda encontrada. {filtros.formaPagamento !== 'TODAS' || filtros.dataInicio || filtros.dataFim || filtros.status !== 'TODAS' ? 'Tente ajustar os filtros.' : ''}
                   </td>
                 </tr>
               )}
@@ -280,4 +296,3 @@ export default function Vendas() {
     </div>
   );
 }
-

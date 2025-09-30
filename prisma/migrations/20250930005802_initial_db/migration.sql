@@ -15,6 +15,7 @@ CREATE TABLE "Venda" (
     "precoVenda" REAL NOT NULL,
     "valorTotal" REAL NOT NULL,
     "entrada" REAL NOT NULL DEFAULT 0,
+    "formaPagamentoEntrada" TEXT,
     "clienteId" INTEGER NOT NULL,
     "observacao" TEXT,
     "dataVenda" DATETIME NOT NULL,

@@ -38,23 +38,24 @@ model Cliente {
 }
 
 model Venda {
-  id             Int      @id @default(autoincrement())
-  produtoId      Int
-  quantidade     Int
-  precoVenda     Float
-  valorTotal     Float
-  entrada        Float    @default(0)
-  clienteId      Int
-  observacao     String?
-  dataVenda      DateTime
-  formaPagamento String?   // Ex.: 'DINHEIRO', 'PIX', 'CARTAO_VISA_DEBITO', 'PROMISSORIA'
-  taxa           Float?    @default(0) // Taxa em reais (ex.: 4.99)
-  valorLiquido   Float?    @default(0) // Valor após taxa (ex.: 95.01)
-  status         String   @default("ABERTO") // 'ABERTO', 'QUITADO', 'CANCELADO'
-  createdAt      DateTime @default(now())
-  produto        Produto  @relation(fields: [produtoId], references: [id])
-  cliente        Cliente  @relation(fields: [clienteId], references: [id])
-  parcelas       Parcela[]
+  id                   Int      @id @default(autoincrement())
+  produtoId            Int
+  quantidade           Int
+  precoVenda           Float
+  valorTotal           Float
+  entrada              Float    @default(0)
+  formaPagamentoEntrada String?  // Novo campo: 'DINHEIRO', 'PIX', etc. para entrada
+  clienteId            Int
+  observacao           String?
+  dataVenda            DateTime
+  formaPagamento       String?   // Ex.: 'DINHEIRO', 'PIX', 'CARTAO_VISA_DEBITO', 'PROMISSORIA'
+  taxa                 Float?    @default(0)
+  valorLiquido         Float?    @default(0)
+  status               String   @default("ABERTO")
+  createdAt            DateTime @default(now())
+  produto              Produto  @relation(fields: [produtoId], references: [id])
+  cliente              Cliente  @relation(fields: [clienteId], references: [id])
+  parcelas             Parcela[]
 }
 
 model Parcela {

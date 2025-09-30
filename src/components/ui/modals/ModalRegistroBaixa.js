@@ -1,4 +1,3 @@
-// /components/ui/modals/ModalRegistro.js
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -24,13 +23,13 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit 
   const [taxasCartao, setTaxasCartao] = useState([]);
   const [taxa, setTaxa] = useState(0);
   const [valorLiquido, setValorLiquido] = useState(0);
+  const [formaPagamentoEntrada, setFormaPagamentoEntrada] = useState('DINHEIRO');
 
   useEffect(() => {
     if (produto) {
       setValorTotal(produto.preco.toFixed(2));
     }
     if (isOpen) {
-      // Carrega clientes
       fetch('/api/clientes', { cache: 'no-store' })
         .then((res) => {
           if (!res.ok) throw new Error('Erro ao carregar clientes');
@@ -41,7 +40,6 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit 
           console.error('Erro ao carregar clientes:', error);
           toast.error('Erro ao carregar clientes ❌');
         });
-      // Carrega taxas de cartão
       fetch('/api/taxas-cartao', { cache: 'no-store' })
         .then((res) => {
           if (!res.ok) throw new Error('Erro ao carregar taxas de cartão');
@@ -55,44 +53,45 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit 
     }
   }, [produto, isOpen]);
 
-  useEffect(() => {
-    if (produto && quantidade) {
-      const qty = parseInt(quantidade, 10);
-      if (!isNaN(qty) && qty > 0) {
-        const novoValorTotal = (produto.preco * qty).toFixed(2);
-        setValorTotal(novoValorTotal);
-        // Recalcula taxa e líquido
-        if (formaPagamento === 'CARTAO' && bandeira && modalidade) {
-          const taxaCartao = taxasCartao.find(
-            (t) => t.bandeira === bandeira && t.modalidade === modalidade
-          );
-          if (taxaCartao) {
-            const taxaPercentual = taxaCartao.taxaPercentual / 100;
-            const novaTaxa = (parseFloat(novoValorTotal) * taxaPercentual).toFixed(2);
-            setTaxa(novaTaxa);
-            setValorLiquido((parseFloat(novoValorTotal) - parseFloat(novaTaxa)).toFixed(2));
-          }
+useEffect(() => {
+  if (produto && quantidade) {
+    const qty = parseInt(quantidade, 10);
+    if (!isNaN(qty) && qty > 0) {
+      const novoValorTotal = (produto.preco * qty).toFixed(2);
+      setValorTotal(novoValorTotal);
+      if (formaPagamento === 'CARTAO' && bandeira && modalidade) {
+        const taxaCartao = taxasCartao.find(
+          (t) => t.bandeira === bandeira && t.modalidade === modalidade // Corrige e.target.value para modalidade
+        );
+        if (taxaCartao) {
+          const taxaPercentual = taxaCartao.taxaPercentual / 100;
+          const novaTaxa = (parseFloat(novoValorTotal) * taxaPercentual).toFixed(2);
+          setTaxa(novaTaxa);
+          setValorLiquido((parseFloat(novoValorTotal) - parseFloat(novaTaxa)).toFixed(2));
         } else {
           setTaxa(0);
           setValorLiquido(novoValorTotal);
         }
+      } else {
+        setTaxa(0);
+        setValorLiquido(novoValorTotal);
       }
     }
-    // Nova lógica para modalidade parcelada
-    if (formaPagamento === 'CARTAO' && modalidade) {
-      const match = modalidade.match(/CREDITO_X(\d+)/);
-      if (match) {
-        const numParcelas = parseInt(match[1], 10);
-        setIsParcelado(true);
-        setNumeroParcelas(numParcelas);
-        setEntrada('0.00'); // Força entrada 0 pra parcelamento
-      } else if (modalidade === 'AVISTA') {
-        setIsParcelado(false);
-        setNumeroParcelas(1);
-        setEntrada(valorTotal); // À vista, entrada = valor total
-      }
+  }
+  if (formaPagamento === 'CARTAO' && modalidade) {
+    const match = modalidade.match(/CREDITO_X(\d+)/);
+    if (match) {
+      const numParcelas = parseInt(match[1], 10);
+      setIsParcelado(true);
+      setNumeroParcelas(numParcelas);
+      setEntrada('0.00');
+    } else if (modalidade === 'AVISTA') {
+      setIsParcelado(false);
+      setNumeroParcelas(1);
+      setEntrada(valorTotal);
     }
-  }, [quantidade, produto, formaPagamento, bandeira, modalidade, taxasCartao, valorTotal]);
+  }
+}, [quantidade, produto, formaPagamento, bandeira, modalidade, taxasCartao, valorTotal]);
 
   const calcularValorParcela = () => {
     if (!valorTotal || !numeroParcelas || numeroParcelas <= 0) return 0;
@@ -141,6 +140,10 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit 
       }
       if (numeroParcelas < 1 || numeroParcelas > 12) {
         toast.error('Número de parcelas deve ser entre 1 e 12');
+        return;
+      }
+      if (formaPagamento === 'PROMISSORIA' && entradaValor > 0 && !['PIX', 'DINHEIRO'].includes(formaPagamentoEntrada)) {
+        toast.error('Forma de pagamento da entrada deve ser PIX ou Dinheiro');
         return;
       }
     } else if (formaPagamento === 'PROMISSORIA' || (formaPagamento === 'CARTAO' && ['CREDITO_X2', 'CREDITO_X3', 'CREDITO_X4_6'].includes(modalidade))) {
@@ -196,6 +199,7 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit 
         formaPagamento,
         bandeira: formaPagamento === 'CARTAO' ? bandeira : undefined,
         modalidade: formaPagamento === 'CARTAO' ? modalidade : undefined,
+        formaPagamentoEntrada: formaPagamento === 'PROMISSORIA' && parseFloat(entrada) > 0 ? formaPagamentoEntrada : undefined, // Inclui explicitamente
       };
       console.log('Dados enviados pro onSubmit:', vendaData);
       const response = await onSubmit(vendaData);
@@ -207,6 +211,7 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit 
         throw new Error(errorData.error || 'Erro ao registrar venda');
       }
 
+      // Reseta todos os estados
       setQuantidade('');
       setClienteNome('');
       setApelido('');
@@ -222,6 +227,7 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit 
       setModalidade('');
       setTaxa(0);
       setValorLiquido(0);
+      setFormaPagamentoEntrada('DINHEIRO'); // Reseta formaPagamentoEntrada
       toast.success('Venda registrada com sucesso! ✅');
       onClose();
     } catch (error) {
@@ -344,6 +350,7 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit 
               setModalidade('');
               setTaxa(0);
               setValorLiquido(valorTotal || 0);
+              setFormaPagamentoEntrada('DINHEIRO'); // Reseta ao mudar forma
             }}
             className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
           >
@@ -479,6 +486,24 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit 
                   className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
                 />
               </div>
+              {formaPagamento === 'PROMISSORIA' && parseFloat(entrada) > 0 && (
+                <div>
+                  <label className="block text-sm font-medium font-poppins text-gray-700">
+                    Forma de Pagamento da Entrada
+                  </label>
+                  <select
+                    value={formaPagamentoEntrada}
+                    onChange={(e) => setFormaPagamentoEntrada(e.target.value)}
+                    className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
+                  >
+                    <option value="DINHEIRO">Dinheiro</option>
+                    <option value="PIX">Pix</option>
+                  </select>
+                  <p className="text-xs font-poppins text-gray-500 mt-1">
+                    Entrada deve ser paga em PIX ou Dinheiro
+                  </p>
+                </div>
+              )}
               <p className="text-sm font-poppins text-gray-600">
                 Valor por parcela: R$ {calcularValorParcela()}
                 {formaPagamento === 'CARTAO' && modalidade && ['CREDITO_X2', 'CREDITO_X3', 'CREDITO_X4_6'].includes(modalidade) && (
@@ -507,6 +532,7 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit 
     </div>
   );
 }
+
 
 
 

@@ -3,3 +3,10 @@ npx prisma db seed
 
 npm run seed:cartao
 npm run seed:calcado
+
+
+
+Ao escolher o pagamento como cartão e a modalidade credito, n deveria ter o campo entrada, pois isso n e possivel
+não tem como da entrada pagando no cartão de crédito.
+
+e quando eu coloc debito, aparece a opção de poder pagar em parcelas, algo que n deveria ser possivel tambem.

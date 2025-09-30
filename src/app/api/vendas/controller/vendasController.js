@@ -6,9 +6,8 @@ const prisma = new PrismaClient();
 // Função para criar uma nova venda no sistema.
 export async function createVenda(data) {
   try {
-    const { produtoId, quantidade, observacao, clienteNome, clienteId, valorTotal, dataVenda, formaPagamento, bandeira, modalidade } = data;
+    const { produtoId, quantidade, observacao, clienteNome, clienteId, valorTotal, dataVenda, formaPagamento, bandeira, modalidade, formaPagamentoEntrada } = data;
     let { isParcelado, numeroParcelas, entrada } = data;  
-    // let { produtoId, quantidade, observacao, clienteNome, clienteId, valorTotal, isParcelado, numeroParcelas, entrada, dataVenda, formaPagamento, bandeira, modalidade } = data;
     console.log('Dados recebidos em createVenda:', data); // Depuração
 
     // Validar entrada
@@ -76,6 +75,13 @@ export async function createVenda(data) {
       return { status: 400, data: { error: 'Para parcelado sem promissória, use cartão com modalidade' } };
     }
 
+    // Validação para formaPagamentoEntrada (somente para promissória com entrada > 0)
+    if (formaPagamento === 'PROMISSORIA' && parseFloat(entrada) > 0) {
+      if (!formaPagamentoEntrada || !['PIX', 'DINHEIRO'].includes(formaPagamentoEntrada.toUpperCase())) {
+        return { status: 400, data: { error: 'Forma de pagamento da entrada deve ser PIX ou DINHEIRO para promissória com entrada' } };
+      }
+    }
+
     // Se der BO so apagar esse IF -----------------------------------------------------------------------------------------------------------------
     if (formaPagamento === 'CARTAO' && !isParcelado) {
       // Força como parcelado de 1x para cartão à vista, com entrada=0 e parcela pendente
@@ -121,6 +127,7 @@ export async function createVenda(data) {
       precoVenda: parseFloat(produto.preco),
       valorTotal: parseFloat(valorTotal),
       entrada: isParcelado ? parseFloat(entrada) || 0 : parseFloat(valorTotal),
+      formaPagamentoEntrada: formaPagamento === 'PROMISSORIA' && parseFloat(entrada) > 0 ? formaPagamentoEntrada.toUpperCase() : null, // Novo campo
       clienteId: finalClienteId,
       observacao: observacao || null,
       dataVenda: parsedDataVenda,
@@ -263,19 +270,40 @@ function calcularResumoVendas(vendas) {
   let porForma = { DINHEIRO: 0, PIX: 0, CARTAO: 0, PROMISSORIA: 0 };
 
   vendas.forEach((venda) => {
-    const valorPago = parseFloat(venda.entrada || 0) + (venda.parcelas?.reduce((sum, p) => sum + parseFloat(p.valorPago || 0), 0) || 0);
-    const valorTotal = parseFloat(venda.valorTotal);
-    const pendente = valorTotal - valorPago;
+    const entrada = parseFloat(venda.entrada || 0);
+    let valorPago = entrada;
+    let pendente = parseFloat(venda.valorTotal) - valorPago; // Inicial com entrada
+
+    // Categorizar entrada
+    let entradaMethod = venda.formaPagamentoEntrada || venda.formaPagamento; // Usa forma específica da entrada se existir
+    if (entradaMethod.startsWith('CARTAO')) entradaMethod = 'CARTAO';
+    if (porForma[entradaMethod] !== undefined) {
+      porForma[entradaMethod] += entrada;
+    }
+
+    // Parcelas
+    venda.parcelas.forEach((parcela) => {
+      const parcelaPago = parseFloat(parcela.valorPago || 0);
+      valorPago += parcelaPago;
+      pendente -= parcelaPago; // Ajusta pendente
+
+      if (parcelaPago > 0) {
+        let parcelaMethod = parcela.formaPagamento;
+        if (parcelaMethod.startsWith('CARTAO')) parcelaMethod = 'CARTAO';
+        if (porForma[parcelaMethod] !== undefined) {
+          porForma[parcelaMethod] += parcelaPago;
+        }
+      }
+    });
 
     totalQuitado += valorPago;
     totalPendente += pendente;
 
-    if (venda.formaPagamento.startsWith('DINHEIRO')) porForma.DINHEIRO += valorPago;
-    else if (venda.formaPagamento.startsWith('PIX')) porForma.PIX += valorPago;
-    else if (venda.formaPagamento.startsWith('CARTAO')) porForma.CARTAO += valorPago;
-    else if (venda.formaPagamento === 'PROMISSORIA') porForma.PROMISSORIA += valorPago;
+    // Para pendentes de promissória, adicionar ao PROMISSORIA
+    if (venda.formaPagamento === 'PROMISSORIA' && pendente > 0) {
+      porForma.PROMISSORIA += pendente;
+    }
   });
 
   return { totalQuitado: totalQuitado.toFixed(2), totalPendente: totalPendente.toFixed(2), porForma };
 }
-

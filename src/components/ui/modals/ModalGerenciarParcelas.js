@@ -1,4 +1,3 @@
-// /components/ui/modals/ModalGerenciarParcelas.js
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -22,6 +21,8 @@ export default function ModalGerenciarParcelas({ isOpen, venda, onClose, marcarP
           toast.error('Erro ao carregar taxas de cartão ❌');
         });
     }
+    // Reseta formasPagamento ao abrir o modal
+    setFormasPagamento({});
   }, [isOpen]);
 
   const handleFormaPagamentoChange = (parcelaId, forma, bandeira, modalidade, valorPago) => {
@@ -52,7 +53,7 @@ export default function ModalGerenciarParcelas({ isOpen, venda, onClose, marcarP
           Parcelas da Venda #{venda.id}
         </h2>
         <p className="text-sm font-poppins text-gray-600 mb-2">
-          Entrada: R$ {venda.entrada.toFixed(2)}
+          Entrada: R$ {venda.entrada.toFixed(2)} {venda.formaPagamentoEntrada ? `(${venda.formaPagamentoEntrada.toLowerCase()})` : ''}
         </p>
         <p className="text-sm font-poppins text-gray-600 mb-4">
           Forma de Pagamento: {venda.formaPagamento?.replace('CARTAO_', '').replace('_', ' ').toLowerCase() || 'N/A'}
@@ -61,7 +62,9 @@ export default function ModalGerenciarParcelas({ isOpen, venda, onClose, marcarP
         <div className="space-y-4">
           {venda.parcelas.map((parcela) => {
             const isCartao = parcela.formaPagamento?.startsWith('CARTAO_');
-            const [_, bandeira, modalidade] = parcela.formaPagamento?.split('_') || [];
+            const formaParts = parcela.formaPagamento?.split('_') || [];
+            const bandeira = isCartao && formaParts.length === 3 ? formaParts[1] : '';
+            const modalidade = isCartao && formaParts.length === 3 ? formaParts[2] : '';
             return (
               <div key={parcela.id} className="border-b pb-2">
                 <p className="text-sm font-poppins text-gray-700">
@@ -101,20 +104,18 @@ export default function ModalGerenciarParcelas({ isOpen, venda, onClose, marcarP
                       <input
                         type="number"
                         step="0.01"
-                        defaultValue={parcela.valor - (parcela.valorPago || 0)} // Default é o valor pendente
+                        defaultValue={(parcela.valor - (parcela.valorPago || 0)).toFixed(2)}
                         placeholder="Valor a pagar"
                         className="border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
                         id={`valorPago-${parcela.id}`}
                         onChange={(e) => {
-                          if (!isCartao) {
-                            handleFormaPagamentoChange(
-                              parcela.id,
-                              formasPagamento[parcela.id]?.forma || 'PROMISSORIA',
-                              formasPagamento[parcela.id]?.bandeira || '',
-                              formasPagamento[parcela.id]?.modalidade || '',
-                              e.target.value
-                            );
-                          }
+                          handleFormaPagamentoChange(
+                            parcela.id,
+                            isCartao ? 'CARTAO' : formasPagamento[parcela.id]?.forma || 'PROMISSORIA',
+                            bandeira,
+                            modalidade,
+                            e.target.value
+                          );
                         }}
                       />
                       {isCartao ? (
@@ -134,7 +135,7 @@ export default function ModalGerenciarParcelas({ isOpen, venda, onClose, marcarP
                               document.getElementById(`valorPago-${parcela.id}`).value
                             )}
                           >
-                            <option value="">Forma de pagamento</option>
+                            <option value="">Selecione a forma</option>
                             <option value="DINHEIRO">Dinheiro</option>
                             <option value="PIX">Pix</option>
                             <option value="CARTAO">Cartão</option>
@@ -186,6 +187,9 @@ export default function ModalGerenciarParcelas({ isOpen, venda, onClose, marcarP
                               )}
                             </>
                           )}
+                          <p className="text-xs font-poppins text-gray-500 mt-1">
+                            Para promissórias, pague parcelas com PIX ou Dinheiro
+                          </p>
                         </>
                       )}
                       <input
@@ -197,6 +201,7 @@ export default function ModalGerenciarParcelas({ isOpen, venda, onClose, marcarP
                       <input
                         type="date"
                         max={format(new Date(), 'yyyy-MM-dd')}
+                        defaultValue={format(new Date(), 'yyyy-MM-dd')}
                         className="border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
                         id={`dataPagamento-${parcela.id}`}
                       />
@@ -205,31 +210,46 @@ export default function ModalGerenciarParcelas({ isOpen, venda, onClose, marcarP
                           const valorPago = document.getElementById(`valorPago-${parcela.id}`).value;
                           const observacao = document.getElementById(`observacao-${parcela.id}`).value;
                           const dataPagamento = document.getElementById(`dataPagamento-${parcela.id}`).value;
-                          const forma = isCartao ? parcela.formaPagamento.split('_')[0] : formasPagamento[parcela.id]?.forma || 'PROMISSORIA';
-                          const bandeiraCartao = isCartao ? parcela.formaPagamento.split('_')[1] : formasPagamento[parcela.id]?.bandeira;
-                          const modalidadeCartao = isCartao ? parcela.formaPagamento.split('_')[2] : formasPagamento[parcela.id]?.modalidade;
+                          const forma = isCartao ? 'CARTAO' : formasPagamento[parcela.id]?.forma || 'PROMISSORIA';
+                          const bandeiraCartao = isCartao ? bandeira : formasPagamento[parcela.id]?.bandeira;
+                          const modalidadeCartao = isCartao ? modalidade : formasPagamento[parcela.id]?.modalidade;
 
                           if (!valorPago || parseFloat(valorPago) <= 0) {
                             toast.error('Digite um valor válido');
                             return;
                           }
-                          if (!isCartao && !forma) {
+                          if (parseFloat(valorPago) > (parcela.valor - (parcela.valorPago || 0))) {
+                            toast.error('Valor pago não pode exceder o valor pendente');
+                            return;
+                          }
+                          if (!forma) {
                             toast.error('Selecione uma forma de pagamento');
                             return;
                           }
+                          // Exige bandeira e modalidade apenas para novas seleções de cartão em promissórias
                           if (!isCartao && forma === 'CARTAO' && (!bandeiraCartao || !modalidadeCartao)) {
                             toast.error('Selecione bandeira e modalidade para cartão');
+                            return;
+                          }
+                          if (!dataPagamento) {
+                            toast.error('Selecione a data de pagamento');
+                            return;
+                          }
+                          const selectedDate = new Date(dataPagamento);
+                          const today = new Date();
+                          if (selectedDate > today) {
+                            toast.error('Data de pagamento não pode ser futura');
                             return;
                           }
 
                           marcarParcelaComoPaga(
                             parcela.id,
-                            valorPago,
+                            parseFloat(valorPago),
                             observacao || null,
-                            isCartao ? 'CARTAO' : forma,
-                            bandeiraCartao,
-                            modalidadeCartao,
-                            dataPagamento || new Date().toISOString().split('T')[0]
+                            forma,
+                            isCartao ? bandeira : bandeiraCartao, // Usa bandeira original para cartão
+                            isCartao ? modalidade : modalidadeCartao, // Usa modalidade original para cartão
+                            dataPagamento
                           );
                         }}
                         className="bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700 font-poppins text-sm"
@@ -246,7 +266,10 @@ export default function ModalGerenciarParcelas({ isOpen, venda, onClose, marcarP
 
         <div className="mt-4 flex justify-end">
           <button
-            onClick={onClose}
+            onClick={() => {
+              onClose();
+              setFormasPagamento({});
+            }}
             className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400 font-poppins text-sm"
           >
             Fechar
@@ -256,4 +279,5 @@ export default function ModalGerenciarParcelas({ isOpen, venda, onClose, marcarP
     </div>
   );
 }
+
 
