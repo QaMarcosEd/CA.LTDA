@@ -1,3 +1,4 @@
+// app/vendas/page.js
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -208,10 +209,6 @@ export default function Vendas() {
               </select>
             </div>
           </div>
-          {/* <div className="flex justify-end space-x-2 mt-4">
-            <button onClick={aplicarFiltros} className="bg-blue-600 text-white px-4 py-2 rounded">Aplicar</button>
-            <button onClick={limparFiltros} className="bg-gray-500 text-white px-4 py-2 rounded">Limpar</button>
-          </div> */}
         </div>
 
         {/* Tabela de Vendas */}
@@ -283,3 +280,4 @@ export default function Vendas() {
     </div>
   );
 }
+

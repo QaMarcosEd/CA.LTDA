@@ -1,127 +1,3 @@
-// // api/parcelas/[id]/route.js
-// import { PrismaClient } from '@prisma/client';
-
-// const prisma = new PrismaClient();
-
-// export async function PUT(request, { params }) {
-//   try {
-//     const { incrementoValorPago, observacao, pago, formaPagamentoParcela, bandeira, modalidade } = await request.json();
-//     console.log('Dados recebidos em PUT /api/parcelas/[id]:', { incrementoValorPago, observacao, pago, formaPagamentoParcela, bandeira, modalidade });
-
-//     const parcela = await prisma.parcela.findUnique({ where: { id: parseInt(params.id) } });
-//     if (!parcela) {
-//       return new Response(JSON.stringify({ error: 'Parcela não encontrada' }), {
-//         status: 404,
-//         headers: { 'Content-Type': 'application/json' },
-//       });
-//     }
-
-//     const valorPagoExistente = parseFloat(parcela.valorPago || 0);
-//     const valorPendente = parseFloat(parcela.valor) - valorPagoExistente;
-//     const novoValorPago = parseFloat(incrementoValorPago);
-
-//     // Valida se o novo valor pago é maior que zero
-//     if (novoValorPago <= 0) {
-//       return new Response(JSON.stringify({ error: 'Valor pago deve ser maior que zero' }), {
-//         status: 400,
-//         headers: { 'Content-Type': 'application/json' },
-//       });
-//     }
-
-//     // Valida se o novo valor pago não excede o valor pendente
-//     if (novoValorPago > valorPendente) {
-//       return new Response(
-//         JSON.stringify({
-//           error: `Valor pago (R$ ${novoValorPago.toFixed(2)}) não pode exceder o valor pendente (R$ ${valorPendente.toFixed(2)})`,
-//         }),
-//         {
-//           status: 400,
-//           headers: { 'Content-Type': 'application/json' },
-//         }
-//       );
-//     }
-
-//     let taxaParcela = parcela.taxa || 0; // Usa taxa já definida na parcela
-//     let valorLiquidoParcela = novoValorPago; // Inicialmente igual ao pago
-//     let formaPagamentoFormatada = parcela.formaPagamento; // Mantém forma existente por padrão
-
-//     // Se a parcela é de uma promissória, permite definir nova forma de pagamento
-//     if (parcela.formaPagamento === 'PROMISSORIA' && formaPagamentoParcela) {
-//       if (formaPagamentoParcela === 'CARTAO') {
-//         if (!bandeira || !modalidade) {
-//           return new Response(JSON.stringify({ error: 'Bandeira e modalidade são obrigatórias para cartão' }), {
-//             status: 400,
-//             headers: { 'Content-Type': 'application/json' },
-//           });
-//         }
-//         const taxaCartao = await prisma.taxaCartao.findUnique({
-//           where: { bandeira_modalidade: { bandeira: bandeira.toUpperCase(), modalidade: modalidade.toUpperCase() } },
-//         });
-//         if (!taxaCartao) {
-//           return new Response(JSON.stringify({ error: 'Taxa não encontrada para essa bandeira e modalidade' }), {
-//             status: 400,
-//             headers: { 'Content-Type': 'application/json' },
-//           });
-//         }
-//         const taxaPercentual = taxaCartao.taxaPercentual / 100;
-//         taxaParcela = parseFloat((novoValorPago * taxaPercentual).toFixed(2));
-//         valorLiquidoParcela = parseFloat((novoValorPago - taxaParcela).toFixed(2));
-//         formaPagamentoFormatada = `CARTAO_${bandeira.toUpperCase()}_${modalidade.toUpperCase()}`;
-//       } else {
-//         formaPagamentoFormatada = formaPagamentoParcela.toUpperCase(); // Dinheiro ou Pix
-//         taxaParcela = 0; // Sem taxa pra Dinheiro/Pix
-//         valorLiquidoParcela = novoValorPago;
-//       }
-//     } else if (parcela.formaPagamento?.startsWith('CARTAO_')) {
-//       // Para cartão, mantém forma e taxa originais
-//       formaPagamentoFormatada = parcela.formaPagamento;
-//       valorLiquidoParcela = novoValorPago - taxaParcela; // Usa taxa da parcela
-//     }
-
-//     const novoValorPagoTotal = valorPagoExistente + novoValorPago;
-//     const novoValorLiquidoTotal = parseFloat(parcela.valorLiquido || 0) + valorLiquidoParcela;
-
-//     const updatedParcela = await prisma.parcela.update({
-//       where: { id: parseInt(params.id) },
-//       data: {
-//         valorPago: novoValorPagoTotal,
-//         observacao: observacao || parcela.observacao,
-//         pago: pago,
-//         formaPagamento: formaPagamentoFormatada,
-//         taxa: taxaParcela,
-//         valorLiquido: novoValorLiquidoTotal,
-//         dataPagamento: pago ? new Date() : null, // Data real do recebimento
-//       },
-//     });
-
-//     // Atualiza status da venda se todas parcelas estiverem pagas
-//     const venda = await prisma.venda.findUnique({
-//       where: { id: parcela.vendaId },
-//       include: { parcelas: true },
-//     });
-//     const todasPagas = venda.parcelas.every((p) => p.pago);
-//     if (todasPagas) {
-//       await prisma.venda.update({
-//         where: { id: parcela.vendaId },
-//         data: { status: 'QUITADO' },
-//       });
-//     }
-
-//     console.log('Parcela atualizada:', updatedParcela);
-//     return new Response(JSON.stringify(updatedParcela), {
-//       status: 200,
-//       headers: { 'Content-Type': 'application/json' },
-//     });
-//   } catch (error) {
-//     console.error('Erro ao atualizar parcela:', error);
-//     return new Response(JSON.stringify({ error: 'Erro ao atualizar parcela', details: error.message }), {
-//       status: 500,
-//       headers: { 'Content-Type': 'application/json' },
-//     });
-//   }
-// }
-
-
 // api/parcelas/[id]/route.js
 import { PrismaClient } from '@prisma/client';
 
@@ -130,7 +6,6 @@ const prisma = new PrismaClient();
 export async function PUT(request, { params }) {
   try {
     const { incrementoValorPago, observacao, formaPagamentoParcela, bandeira, modalidade } = await request.json();
-    console.log('Dados recebidos em PUT /api/parcelas/[id]:', { incrementoValorPago, observacao, formaPagamentoParcela, bandeira, modalidade });
 
     const parcela = await prisma.parcela.findUnique({ where: { id: parseInt(params.id) } });
     if (!parcela) {
@@ -144,7 +19,6 @@ export async function PUT(request, { params }) {
     const valorPendente = parseFloat(parcela.valor) - valorPagoExistente;
     const novoValorPago = parseFloat(incrementoValorPago);
 
-    // Valida se o novo valor pago é maior que zero
     if (novoValorPago <= 0) {
       return new Response(JSON.stringify({ error: 'Valor pago deve ser maior que zero' }), {
         status: 400,
@@ -152,60 +26,44 @@ export async function PUT(request, { params }) {
       });
     }
 
-    // Valida se o novo valor pago não excede o valor pendente
     if (novoValorPago > valorPendente) {
       return new Response(
         JSON.stringify({
           error: `Valor pago (R$ ${novoValorPago.toFixed(2)}) não pode exceder o valor pendente (R$ ${valorPendente.toFixed(2)})`,
         }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        }
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    let taxaParcela = parcela.taxa || 0; // Usa taxa já definida na parcela
-    let valorLiquidoParcela = novoValorPago; // Inicialmente igual ao pago
-    let formaPagamentoFormatada = parcela.formaPagamento; // Mantém forma existente por padrão
+    let taxaParcela = parcela.taxa || 0;
+    let valorLiquidoParcela = novoValorPago;
+    let formaPagamentoFormatada = parcela.formaPagamento;
 
-    // Se a parcela é de uma promissória, permite definir nova forma de pagamento
-    if (parcela.formaPagamento === 'PROMISSORIA' && formaPagamentoParcela) {
-      if (formaPagamentoParcela === 'CARTAO') {
-        if (!bandeira || !modalidade) {
-          return new Response(JSON.stringify({ error: 'Bandeira e modalidade são obrigatórias para cartão' }), {
-            status: 400,
-            headers: { 'Content-Type': 'application/json' },
-          });
-        }
-        const taxaCartao = await prisma.taxaCartao.findUnique({
-          where: { bandeira_modalidade: { bandeira: bandeira.toUpperCase(), modalidade: modalidade.toUpperCase() } },
+    // Bloqueia Cartão para parcelas de promissória
+    if (parcela.formaPagamento === 'PROMISSORIA') {
+      if (formaPagamentoParcela?.toUpperCase() === 'CARTAO') {
+        return new Response(JSON.stringify({ error: 'Parcelas de promissória não podem ser pagas com cartão' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
         });
-        if (!taxaCartao) {
-          return new Response(JSON.stringify({ error: 'Taxa não encontrada para essa bandeira e modalidade' }), {
-            status: 400,
-            headers: { 'Content-Type': 'application/json' },
-          });
-        }
-        const taxaPercentual = taxaCartao.taxaPercentual / 100;
-        taxaParcela = parseFloat((novoValorPago * taxaPercentual).toFixed(2));
-        valorLiquidoParcela = parseFloat((novoValorPago - taxaParcela).toFixed(2));
-        formaPagamentoFormatada = `CARTAO_${bandeira.toUpperCase()}_${modalidade.toUpperCase()}`;
-      } else {
-        formaPagamentoFormatada = formaPagamentoParcela.toUpperCase(); // Dinheiro ou Pix
-        taxaParcela = 0; // Sem taxa pra Dinheiro/Pix
-        valorLiquidoParcela = novoValorPago;
       }
+
+      // Aceita apenas DINHEIRO ou PIX
+      if (formaPagamentoParcela) {
+        formaPagamentoFormatada = formaPagamentoParcela.toUpperCase();
+      } else {
+        formaPagamentoFormatada = 'DINHEIRO'; // Default se não informado
+      }
+
+      taxaParcela = 0;
+      valorLiquidoParcela = novoValorPago;
     } else if (parcela.formaPagamento?.startsWith('CARTAO_')) {
-      // Para cartão, mantém forma e taxa originais
-      formaPagamentoFormatada = parcela.formaPagamento;
-      valorLiquidoParcela = novoValorPago - taxaParcela; // Usa taxa da parcela
+      // Mantém taxa e forma de cartão se já era cartão
+      valorLiquidoParcela = novoValorPago - taxaParcela;
     }
 
     const novoValorPagoTotal = valorPagoExistente + novoValorPago;
     const novoValorLiquidoTotal = parseFloat(parcela.valorLiquido || 0) + valorLiquidoParcela;
-
-    // ✅ Calcula se a parcela foi quitada
     const quitada = novoValorPagoTotal >= parseFloat(parcela.valor);
 
     const updatedParcela = await prisma.parcela.update({
@@ -213,11 +71,11 @@ export async function PUT(request, { params }) {
       data: {
         valorPago: novoValorPagoTotal,
         observacao: observacao || parcela.observacao,
-        pago: quitada, // ✅ só marca quitada quando realmente pagar tudo
+        pago: quitada,
         formaPagamento: formaPagamentoFormatada,
         taxa: taxaParcela,
         valorLiquido: novoValorLiquidoTotal,
-        dataPagamento: quitada ? new Date() : null, // ✅ só grava data quando quitada
+        dataPagamento: quitada ? new Date() : null,
       },
     });
 
@@ -234,18 +92,12 @@ export async function PUT(request, { params }) {
       });
     }
 
-    console.log('Parcela atualizada:', updatedParcela);
-
-    // ✅ adiciona saldo restante no retorno pra facilitar no front
     return new Response(
       JSON.stringify({
         ...updatedParcela,
         saldoRestante: parseFloat(parcela.valor) - novoValorPagoTotal,
       }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     console.error('Erro ao atualizar parcela:', error);
@@ -255,3 +107,4 @@ export async function PUT(request, { params }) {
     });
   }
 }
+

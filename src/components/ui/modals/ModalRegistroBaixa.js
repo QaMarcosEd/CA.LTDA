@@ -1,3 +1,4 @@
+// /components/ui/modals/ModalRegistro.js
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -506,5 +507,6 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit 
     </div>
   );
 }
+
 
 

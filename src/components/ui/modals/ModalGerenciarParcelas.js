@@ -256,3 +256,4 @@ export default function ModalGerenciarParcelas({ isOpen, venda, onClose, marcarP
     </div>
   );
 }
+
