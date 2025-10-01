@@ -15,7 +15,7 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit 
   const [clientes, setClientes] = useState([]);
   const [isNewCliente, setIsNewCliente] = useState(false);
   const [isParcelado, setIsParcelado] = useState(false);
-  const [numeroParcelas, setNumeroParcelas] = useState(1);
+  const [numeroParcelas, setNumeroParcelas] = useState('1');
   const [entrada, setEntrada] = useState('0.00');
   const [formaPagamento, setFormaPagamento] = useState('');
   const [bandeira, setBandeira] = useState('');
@@ -53,45 +53,52 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit 
     }
   }, [produto, isOpen]);
 
-useEffect(() => {
-  if (produto && quantidade) {
-    const qty = parseInt(quantidade, 10);
-    if (!isNaN(qty) && qty > 0) {
-      const novoValorTotal = (produto.preco * qty).toFixed(2);
-      setValorTotal(novoValorTotal);
-      if (formaPagamento === 'CARTAO' && bandeira && modalidade) {
-        const taxaCartao = taxasCartao.find(
-          (t) => t.bandeira === bandeira && t.modalidade === modalidade // Corrige e.target.value para modalidade
-        );
-        if (taxaCartao) {
-          const taxaPercentual = taxaCartao.taxaPercentual / 100;
-          const novaTaxa = (parseFloat(novoValorTotal) * taxaPercentual).toFixed(2);
-          setTaxa(novaTaxa);
-          setValorLiquido((parseFloat(novoValorTotal) - parseFloat(novaTaxa)).toFixed(2));
+  useEffect(() => {
+    if (produto && quantidade) {
+      const qty = parseInt(quantidade, 10);
+      if (!isNaN(qty) && qty > 0) {
+        const novoValorTotal = (produto.preco * qty).toFixed(2);
+        setValorTotal(novoValorTotal);
+        if (formaPagamento === 'CARTAO' && bandeira && modalidade) {
+          const taxaCartao = taxasCartao.find(
+            (t) => t.bandeira === bandeira && t.modalidade === modalidade
+          );
+          if (taxaCartao) {
+            const taxaPercentual = taxaCartao.taxaPercentual / 100;
+            const novaTaxa = (parseFloat(novoValorTotal) * taxaPercentual).toFixed(2);
+            setTaxa(novaTaxa);
+            setValorLiquido((parseFloat(novoValorTotal) - parseFloat(novaTaxa)).toFixed(2));
+          } else {
+            setTaxa(0);
+            setValorLiquido(novoValorTotal);
+          }
         } else {
           setTaxa(0);
           setValorLiquido(novoValorTotal);
         }
-      } else {
-        setTaxa(0);
-        setValorLiquido(novoValorTotal);
       }
     }
-  }
-  if (formaPagamento === 'CARTAO' && modalidade) {
-    const match = modalidade.match(/CREDITO_X(\d+)/);
-    if (match) {
-      const numParcelas = parseInt(match[1], 10);
-      setIsParcelado(true);
-      setNumeroParcelas(numParcelas);
-      setEntrada('0.00');
-    } else if (modalidade === 'AVISTA') {
+    if (formaPagamento === 'CARTAO' && modalidade) {
+      const isCredito = modalidade.match(/CREDITO_X(\d+)/);
+      if (isCredito) {
+        const numParcelas = parseInt(isCredito[1], 10) || 1;
+        setIsParcelado(true);
+        setNumeroParcelas(String(numParcelas));
+        setEntrada('0.00');
+      } else if (modalidade === 'AVISTA') {
+        setIsParcelado(false);
+        setNumeroParcelas('1');
+        setEntrada(valorTotal || '0.00');
+      }
+    } else if (['PIX', 'DINHEIRO'].includes(formaPagamento)) {
       setIsParcelado(false);
-      setNumeroParcelas(1);
-      setEntrada(valorTotal);
+      setNumeroParcelas('1');
+      setEntrada(valorTotal || '0.00');
+    } else {
+      setNumeroParcelas('1');
+      setEntrada('0.00');
     }
-  }
-}, [quantidade, produto, formaPagamento, bandeira, modalidade, taxasCartao, valorTotal]);
+  }, [quantidade, produto, formaPagamento, bandeira, modalidade, taxasCartao, valorTotal]);
 
   const calcularValorParcela = () => {
     if (!valorTotal || !numeroParcelas || numeroParcelas <= 0) return 0;
@@ -199,7 +206,7 @@ useEffect(() => {
         formaPagamento,
         bandeira: formaPagamento === 'CARTAO' ? bandeira : undefined,
         modalidade: formaPagamento === 'CARTAO' ? modalidade : undefined,
-        formaPagamentoEntrada: formaPagamento === 'PROMISSORIA' && parseFloat(entrada) > 0 ? formaPagamentoEntrada : undefined, // Inclui explicitamente
+        formaPagamentoEntrada: formaPagamento === 'PROMISSORIA' && parseFloat(entrada) > 0 ? formaPagamentoEntrada : undefined,
       };
       console.log('Dados enviados pro onSubmit:', vendaData);
       const response = await onSubmit(vendaData);
@@ -211,7 +218,6 @@ useEffect(() => {
         throw new Error(errorData.error || 'Erro ao registrar venda');
       }
 
-      // Reseta todos os estados
       setQuantidade('');
       setClienteNome('');
       setApelido('');
@@ -220,14 +226,14 @@ useEffect(() => {
       setDataVenda(format(subDays(new Date(), 1), 'yyyy-MM-dd'));
       setIsNewCliente(false);
       setIsParcelado(false);
-      setNumeroParcelas(1);
+      setNumeroParcelas('1');
       setEntrada('0.00');
       setFormaPagamento('');
       setBandeira('');
       setModalidade('');
       setTaxa(0);
       setValorLiquido(0);
-      setFormaPagamentoEntrada('DINHEIRO'); // Reseta formaPagamentoEntrada
+      setFormaPagamentoEntrada('DINHEIRO');
       toast.success('Venda registrada com sucesso! ✅');
       onClose();
     } catch (error) {
@@ -240,7 +246,7 @@ useEffect(() => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 text-gray-600">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+      <div className="bg-white rounded-lg p-4 w-11/12 max-w-md max-h-[90vh] overflow-y-auto relative">
         <h2 className="text-xl font-bold font-poppins text-gray-900 mb-4">
           Registrar Venda - {produto.nome}
         </h2>
@@ -284,7 +290,7 @@ useEffect(() => {
               ))}
             </select>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-2">
               <input
                 type="text"
                 value={clienteNome}
@@ -350,7 +356,7 @@ useEffect(() => {
               setModalidade('');
               setTaxa(0);
               setValorLiquido(valorTotal || 0);
-              setFormaPagamentoEntrada('DINHEIRO'); // Reseta ao mudar forma
+              setFormaPagamentoEntrada('DINHEIRO');
             }}
             className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
           >
@@ -363,7 +369,7 @@ useEffect(() => {
         </div>
 
         {formaPagamento === 'CARTAO' && (
-          <div className="mb-4 space-y-4">
+          <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium font-poppins text-gray-700">
                 Bandeira
@@ -420,7 +426,7 @@ useEffect(() => {
               </div>
             )}
             {taxa > 0 && (
-              <p className="text-sm font-poppins text-gray-600">
+              <p className="text-sm font-poppins text-gray-600 col-span-2">
                 Taxa: R$ {taxa} | Valor Líquido: R$ {valorLiquido}
               </p>
             )}
@@ -443,78 +449,75 @@ useEffect(() => {
           </p>
         </div>
 
-        <div className="mb-4">
-          <label className="flex items-center text-sm font-medium font-poppins text-gray-700">
-            <input
-              type="checkbox"
-              checked={isParcelado}
-              onChange={(e) => setIsParcelado(e.target.checked)}
-              className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              disabled={formaPagamento === 'CARTAO' && modalidade && modalidade.includes('CREDITO_X')}
-            />
-            Pagar em parcelas
-          </label>
-          {isParcelado && (
-            <div className="mt-2 space-y-4">
-              <div>
-                <label className="block text-sm font-medium font-poppins text-gray-700">
-                  Número de Parcelas
-                </label>
-                <select
-                  value={numeroParcelas}
-                  onChange={(e) => setNumeroParcelas(e.target.value)}
-                  className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
-                  disabled={formaPagamento === 'CARTAO' && modalidade && modalidade.includes('CREDITO_X')}
-                >
-                  {[...Array(12).keys()].map((i) => (
-                    <option key={i + 1} value={i + 1}>
-                      {i + 1}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium font-poppins text-gray-700">
-                  Entrada (R$)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={entrada}
-                  onChange={(e) => setEntrada(e.target.value)}
-                  placeholder="0.00"
-                  className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
-                />
-              </div>
-              {formaPagamento === 'PROMISSORIA' && parseFloat(entrada) > 0 && (
+        {formaPagamento === 'PROMISSORIA' && (
+          <div className="mb-4">
+            <label className="flex items-center text-sm font-medium font-poppins text-gray-700">
+              <input
+                type="checkbox"
+                checked={isParcelado}
+                onChange={(e) => setIsParcelado(e.target.checked)}
+                className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              Pagar em parcelas
+            </label>
+            {isParcelado && (
+              <div className="mt-2 space-y-2">
                 <div>
                   <label className="block text-sm font-medium font-poppins text-gray-700">
-                    Forma de Pagamento da Entrada
+                    Número de Parcelas
                   </label>
                   <select
-                    value={formaPagamentoEntrada}
-                    onChange={(e) => setFormaPagamentoEntrada(e.target.value)}
+                    value={numeroParcelas}
+                    onChange={(e) => setNumeroParcelas(e.target.value)}
                     className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
                   >
-                    <option value="DINHEIRO">Dinheiro</option>
-                    <option value="PIX">Pix</option>
+                    {[...Array(12).keys()].map((i) => (
+                      <option key={i + 1} value={String(i + 1)}>
+                        {i + 1}
+                      </option>
+                    ))}
                   </select>
-                  <p className="text-xs font-poppins text-gray-500 mt-1">
-                    Entrada deve ser paga em PIX ou Dinheiro
-                  </p>
                 </div>
-              )}
-              <p className="text-sm font-poppins text-gray-600">
-                Valor por parcela: R$ {calcularValorParcela()}
-                {formaPagamento === 'CARTAO' && modalidade && ['CREDITO_X2', 'CREDITO_X3', 'CREDITO_X4_6'].includes(modalidade) && (
-                  <> | Líquido por parcela: R$ {(calcularValorParcela() * (1 - (taxasCartao.find(t => t.bandeira === bandeira && t.modalidade === modalidade)?.taxaPercentual || 0) / 100)).toFixed(2)}</>
+                <div>
+                  <label className="block text-sm font-medium font-poppins text-gray-700">
+                    Entrada (R$)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={entrada}
+                    onChange={(e) => setEntrada(e.target.value)}
+                    placeholder="0.00"
+                    className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
+                  />
+                </div>
+                {parseFloat(entrada) > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium font-poppins text-gray-700">
+                      Forma de Pagamento da Entrada
+                    </label>
+                    <select
+                      value={formaPagamentoEntrada}
+                      onChange={(e) => setFormaPagamentoEntrada(e.target.value)}
+                      className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
+                    >
+                      <option value="DINHEIRO">Dinheiro</option>
+                      <option value="PIX">Pix</option>
+                    </select>
+                    <p className="text-xs font-poppins text-gray-500 mt-1">
+                      Entrada deve ser paga em PIX ou Dinheiro
+                    </p>
+                  </div>
                 )}
-              </p>
-            </div>
-          )}
-        </div>
+                <p className="text-sm font-poppins text-gray-600">
+                  Valor por parcela: R$ {calcularValorParcela()}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
-        <div className="flex justify-end space-x-2">
+        <div className="sticky bottom-0 bg-white pt-4 flex justify-end space-x-2">
           <button
             onClick={onClose}
             className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400 font-poppins text-sm"
@@ -532,6 +535,7 @@ useEffect(() => {
     </div>
   );
 }
+
 
 
 
