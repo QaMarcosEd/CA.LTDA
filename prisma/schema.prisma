@@ -33,6 +33,8 @@ model Cliente {
   nome         String   @unique
   apelido      String?
   telefone     String?
+  ultimaCompra     DateTime? // Novo: data da última compra (opcional)
+  frequenciaCompras Int?     // Novo: número total de compras (opcional)
   vendas       Venda[]
   criadoEm     DateTime @default(now())
 }
