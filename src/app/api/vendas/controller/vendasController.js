@@ -82,21 +82,18 @@ export async function createVenda(data) {
       }
     }
 
-    // Se der BO so apagar esse IF -----------------------------------------------------------------------------------------------------------------
     if (formaPagamento === 'CARTAO' && !isParcelado) {
-      // Força como parcelado de 1x para cartão à vista, com entrada=0 e parcela pendente
       isParcelado = true;
       numeroParcelas = 1;
-      entrada = 0;  // Nada pago na hora; o "pagamento" é a parcela pendente
+      entrada = 0;
     }
 
-    // Usar clienteId diretamente se fornecido; caso contrário, buscar ou criar cliente por clienteNome
     let finalClienteId = clienteId;
     if (!finalClienteId && clienteNome) {
       let cliente = await prisma.cliente.findUnique({ where: { nome: clienteNome } });
       if (!cliente) {
         cliente = await prisma.cliente.create({
-          data: { nome: clienteNome }, // Pode adicionar email/telefone no futuro
+          data: { nome: clienteNome },
         });
       }
       finalClienteId = cliente.id;
@@ -107,7 +104,6 @@ export async function createVenda(data) {
       return { status: 400, data: { error: 'Cliente inválido' } };
     }
 
-    // Busca o produto no banco de dados pelo ID fornecido
     const produto = await prisma.produto.findUnique({ where: { id: parseInt(produtoId) } });
     
     if (!produto) {
@@ -120,35 +116,33 @@ export async function createVenda(data) {
       return { status: 400, data: { error: 'Estoque insuficiente' } };
     }
 
-    // Cria uma nova entrada de venda no banco de dados
     const vendaData = {
       produtoId: parseInt(produtoId),
       quantidade: parseInt(quantidade),
       precoVenda: parseFloat(produto.preco),
       valorTotal: parseFloat(valorTotal),
       entrada: isParcelado ? parseFloat(entrada) || 0 : parseFloat(valorTotal),
-      formaPagamentoEntrada: formaPagamento === 'PROMISSORIA' && parseFloat(entrada) > 0 ? formaPagamentoEntrada.toUpperCase() : null, // Novo campo
+      formaPagamentoEntrada: formaPagamento === 'PROMISSORIA' && parseFloat(entrada) > 0 ? formaPagamentoEntrada.toUpperCase() : null,
       clienteId: finalClienteId,
       observacao: observacao || null,
       dataVenda: parsedDataVenda,
       formaPagamento: formaPagamentoFormatada,
       taxa,
       valorLiquido,
-      status: isParcelado ? 'ABERTO' : 'QUITADO', // Inicial
+      status: isParcelado ? 'ABERTO' : 'QUITADO',
     };
 
     if (isParcelado) {
       const entradaValor = parseFloat(entrada) || 0;
       const valorRestante = parseFloat(valorTotal) - entradaValor;
-      const valorRestanteLiquido = valorLiquido - entradaValor; // Se taxa aplicada ao total
+      const valorRestanteLiquido = valorLiquido - entradaValor;
       const valorBaseParcela = Math.floor((valorRestante / numeroParcelas) * 100) / 100;
       const valorBaseParcelaLiquido = Math.floor((valorRestanteLiquido / numeroParcelas) * 100) / 100;
-      const taxaPorParcela = formaPagamento === 'CARTAO' ? parseFloat((taxa / numeroParcelas).toFixed(2)) : 0; // Divide taxa total, ou 0 pra promissória
+      const taxaPorParcela = formaPagamento === 'CARTAO' ? parseFloat((taxa / numeroParcelas).toFixed(2)) : 0;
 
       vendaData.parcelas = {
         create: Array.from({ length: numeroParcelas }, (_, index) => {
-          const dataVencimento = new Date(parsedDataVenda); // Baseado em dataVenda
-          // dataVencimento.setDate(dataVencimento.getDate() + 30 * (index + 1)); // 30 dias entre parcelas -----------------------------------------------------------------------------------------------
+          const dataVencimento = new Date(parsedDataVenda);
           dataVencimento.setMonth(dataVencimento.getMonth() + (index + 1));
           const isLastParcela = index === numeroParcelas - 1;
           const valorParcela = isLastParcela
@@ -164,26 +158,25 @@ export async function createVenda(data) {
             dataVencimento,
             pago: false,
             observacao: null,
-            formaPagamento: formaPagamento === 'CARTAO' ? formaPagamentoFormatada : 'PROMISSORIA', // Pré-seta pra cartão ou promissória
+            formaPagamento: formaPagamento === 'CARTAO' ? formaPagamentoFormatada : 'PROMISSORIA',
             taxa: taxaPorParcela,
             valorLiquido: valorParcelaLiquido,
           };
-          console.log(`Criando parcela ${index + 1}:`, parcela); // Depuração
+          console.log(`Criando parcela ${index + 1}:`, parcela);
           return parcela;
         }),
       };
-      vendaData.status = 'ABERTO'; // Forçar status ABERTO para vendas parceladas
+      vendaData.status = 'ABERTO';
     }
 
-    console.log('Dados da venda a serem criados:', vendaData); // Depuração
+    console.log('Dados da venda a serem criados:', vendaData);
     const venda = await prisma.venda.create({
       data: vendaData,
       include: { cliente: { select: { nome: true } }, parcelas: true },
     });
 
-    console.log('Venda criada:', venda); // Depuração
+    console.log('Venda criada:', venda);
 
-    // Atualiza o produto no banco, subtraindo a quantidade vendida do estoque
     await prisma.produto.update({
       where: { id: parseInt(produtoId) },
       data: {
@@ -192,7 +185,6 @@ export async function createVenda(data) {
       },
     });
 
-    // Retorna a venda criada com status 201 (Created)
     return { status: 201, data: venda };
   } catch (error) {
     console.error('Erro ao registrar venda:', error);
@@ -200,19 +192,18 @@ export async function createVenda(data) {
   }
 }
 
-// Função para listar todas as vendas associadas a um produto específico.
 export async function getVendasPorProduto(produtoId) {
   try {
     const vendas = await prisma.venda.findMany({
       where: { produtoId: parseInt(produtoId) },
-      orderBy: { dataVenda: 'desc' }, // Alterado de 'data' para 'dataVenda'
+      orderBy: { dataVenda: 'desc' },
       include: {
         produto: true,
         cliente: { select: { nome: true } },
         parcelas: true,
       },
     });
-    console.log('Vendas por produto retornadas:', vendas); // Depuração
+    console.log('Vendas por produto retornadas:', vendas);
     return { status: 200, data: vendas };
   } catch (error) {
     console.error('Erro ao listar vendas:', error);
@@ -263,7 +254,6 @@ export async function getTodasAsVendas(filtros = {}) {
   }
 }
 
-// Função auxiliar pra resumo
 function calcularResumoVendas(vendas) {
   let totalQuitado = 0;
   let totalPendente = 0;
@@ -272,20 +262,18 @@ function calcularResumoVendas(vendas) {
   vendas.forEach((venda) => {
     const entrada = parseFloat(venda.entrada || 0);
     let valorPago = entrada;
-    let pendente = parseFloat(venda.valorTotal) - valorPago; // Inicial com entrada
+    let pendente = parseFloat(venda.valorTotal) - valorPago;
 
-    // Categorizar entrada
-    let entradaMethod = venda.formaPagamentoEntrada || venda.formaPagamento; // Usa forma específica da entrada se existir
+    let entradaMethod = venda.formaPagamentoEntrada || venda.formaPagamento;
     if (entradaMethod.startsWith('CARTAO')) entradaMethod = 'CARTAO';
     if (porForma[entradaMethod] !== undefined) {
       porForma[entradaMethod] += entrada;
     }
 
-    // Parcelas
     venda.parcelas.forEach((parcela) => {
       const parcelaPago = parseFloat(parcela.valorPago || 0);
       valorPago += parcelaPago;
-      pendente -= parcelaPago; // Ajusta pendente
+      pendente -= parcelaPago;
 
       if (parcelaPago > 0) {
         let parcelaMethod = parcela.formaPagamento;
@@ -299,7 +287,6 @@ function calcularResumoVendas(vendas) {
     totalQuitado += valorPago;
     totalPendente += pendente;
 
-    // Para pendentes de promissória, adicionar ao PROMISSORIA
     if (venda.formaPagamento === 'PROMISSORIA' && pendente > 0) {
       porForma.PROMISSORIA += pendente;
     }

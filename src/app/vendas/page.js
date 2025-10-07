@@ -1,3 +1,4 @@
+// src/app/vendas/page.js
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -38,7 +39,6 @@ export default function Vendas() {
     return venda.status;
   };
 
-  // Função para formatar forma de pagamento na tabela
   const formatFormaPagamento = (venda) => {
     if (venda.formaPagamento === 'PROMISSORIA' && venda.entrada > 0 && venda.formaPagamentoEntrada) {
       return `${venda.formaPagamentoEntrada} (entrada) + Promissória`;
@@ -58,9 +58,26 @@ export default function Vendas() {
       if (filtros.dataFim) params.append('dataFim', filtros.dataFim);
       if (filtros.status !== 'TODAS') params.append('status', filtros.status);
 
+      console.log('Filtros enviados:', filtros); // Depuração
+      console.log('Parâmetros da URL:', params.toString()); // Depuração
+
       const res = await fetch(`/api/vendas?${params.toString()}`);
-      if (!res.ok) throw new Error('Erro ao buscar vendas');
+      if (!res.ok) {
+        console.error('Erro na requisição:', {
+          status: res.status,
+          statusText: res.statusText,
+          url: res.url,
+        });
+        try {
+          const errorData = await res.json();
+          console.error('Detalhes do erro:', errorData);
+        } catch (e) {
+          console.error('Não foi possível parsear a resposta:', e);
+        }
+        throw new Error('Erro ao buscar vendas');
+      }
       const data = await res.json();
+      console.log('Dados recebidos:', data); // Depuração
       setVendas(data.vendas || []);
       setResumo(data.resumo || { totalQuitado: '0.00', totalPendente: '0.00', porForma: { PIX: 0, DINHEIRO: 0, CARTAO: 0, PROMISSORIA: 0 } });
     } catch (error) {

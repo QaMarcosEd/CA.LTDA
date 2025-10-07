@@ -167,7 +167,7 @@ export default function Home() {
 
         {/* Ações */}
         <div className="flex flex-col sm:flex-row gap-4 mb-8">
-          <Link
+          {/* <Link
             href="produto/adicionar"
             className="inline-flex items-center justify-center bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-poppins text-sm font-medium"
           >
@@ -175,7 +175,7 @@ export default function Home() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
             </svg>
             Adicionar Produto
-          </Link>
+          </Link> */}
           <button
             onClick={() => setLoteModalOpen(true)}
             className="inline-flex items-center justify-center bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-poppins text-sm font-medium"
