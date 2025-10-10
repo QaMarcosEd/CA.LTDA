@@ -88,3 +88,4 @@ export async function createLote(data) {
     return { status: 500, data: { error: 'Erro ao criar lote', details: error.message } };
   }
 }
+

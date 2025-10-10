@@ -89,54 +89,6 @@ export async function getAllProdutos({ marca, modelo, genero, tamanho, referenci
   }
 }
 
-// export async function createProduto(data) {
-//   try {
-//     const camposObrigatorios = ['nome', 'tamanho', 'referencia', 'cor', 'quantidade', 'preco', 'genero', 'modelo', 'marca', 'dataRecebimento'];
-//     const faltando = camposObrigatorios.filter(c => data[c] === undefined || data[c] === null || data[c] === '');
-//     if (faltando.length) {
-//       return { status: 400, data: { error: `Campos obrigatórios faltando: ${faltando.join(', ')}` } };
-//     }
-
-//     // Validação da dataRecebimento
-//     const dataRecebimento = new Date(data.dataRecebimento);
-//     if (isNaN(dataRecebimento.getTime())) {
-//       return { status: 400, data: { error: 'Data de recebimento inválida' } };
-//     }
-
-//     if (isNaN(parseInt(data.tamanho)) || parseInt(data.tamanho) <= 0) {
-//       return { status: 400, data: { error: 'Tamanho inválido' } };
-//     }
-//     if (isNaN(parseInt(data.quantidade)) || parseInt(data.quantidade) < 0) {
-//       return { status: 400, data: { error: 'Quantidade inválida' } };
-//     }
-//     if (isNaN(parseFloat(data.preco)) || parseFloat(data.preco) < 0) {
-//       return { status: 400, data: { error: 'Preço inválido' } };
-//     }
-
-//     const produto = await prisma.produto.create({
-//       data: {
-//         nome: data.nome,
-//         tamanho: parseInt(data.tamanho),
-//         referencia: data.referencia,
-//         cor: data.cor,
-//         quantidade: parseInt(data.quantidade),
-//         preco: parseFloat(data.preco),
-//         genero: data.genero,
-//         modelo: data.modelo,
-//         marca: data.marca,
-//         disponivel: parseInt(data.quantidade) > 0,
-//         lote: data.lote || null,
-//         dataRecebimento: dataRecebimento, // Inclui o novo campo
-//       },
-//     });
-
-//     return { status: 201, data: produto };
-//   } catch (error) {
-//     console.error('Erro ao criar produto:', error);
-//     return { status: 500, data: { error: 'Erro ao criar produto', details: error.message } };
-//   }
-// }
-
 export async function updateProduto(data) {
   try {
     const id = parseInt(data.id);

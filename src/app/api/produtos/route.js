@@ -26,13 +26,6 @@ export async function GET(request) {
   }
 }
 
-// Função para lidar com requisições POST (criação de um novo produto)
-// export async function POST(request) {
-//   const data = await request.json();
-//   const result = await createProduto(data);
-//   return new Response(JSON.stringify(result.data), { status: result.status });
-// }
-
 // Função para lidar com requisições PUT (atualização de um produto existente)
 export async function PUT(request) {
   const data = await request.json();
@@ -47,3 +40,4 @@ export async function DELETE(request) {
   console.log('Resposta enviada para o cliente:', result); // Log adicional
   return new Response(JSON.stringify(result.data), { status: result.status });
 }
+
