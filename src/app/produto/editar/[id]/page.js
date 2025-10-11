@@ -12,7 +12,7 @@ export default function Editar() {
     referencia: '',
     cor: '',
     quantidade: '',
-    preco: '',
+    precoVenda: '',
     genero: '',
     modelo: '',
     marca: '',
@@ -39,7 +39,7 @@ useEffect(() => {
           referencia: produto.referencia || '',
           cor: produto.cor || '',
           quantidade: produto.quantidade || '',
-          preco: produto.preco || '',
+          precoVenda: produto.precoVenda || '',
           genero: produto.genero || '',
           modelo: produto.modelo || '',
           marca: produto.marca || '',
@@ -55,7 +55,7 @@ useEffect(() => {
 
 const handleSubmit = async (e) => {
   e.preventDefault();
-  if (!form.nome || !form.tamanho || !form.referencia || !form.cor || !form.quantidade || !form.preco || !form.genero || !form.modelo || !form.marca || !form.dataRecebimento) {
+  if (!form.nome || !form.tamanho || !form.referencia || !form.cor || !form.quantidade || !form.precoVenda || !form.genero || !form.modelo || !form.marca || !form.dataRecebimento) {
     console.error('Erro: Todos os campos são obrigatórios. Dados atuais:', form);
     alert('Por favor, preencha todos os campos obrigatórios!');
     return;
@@ -79,7 +79,7 @@ const handleSubmit = async (e) => {
     referencia: form.referencia,
     cor: form.cor,
     quantidade: parseInt(form.quantidade),
-    preco: parseFloat(form.preco),
+    precoVenda: parseFloat(form.precoVenda),
     genero: form.genero,
     modelo: form.modelo,
     marca: form.marca,
@@ -151,10 +151,10 @@ const handleSubmit = async (e) => {
             className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200 placeholder-gray-500 text-gray-800 text-base"
           />
           <input
-            name="preco"
+            name="precoVenda"
             type="number"
             step="0.01"
-            value={form.preco}
+            value={form.precoVenda}
             placeholder="Preço"
             onChange={handleChange}
             className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200 placeholder-gray-500 text-gray-800 text-base"

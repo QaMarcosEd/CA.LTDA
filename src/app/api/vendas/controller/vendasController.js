@@ -119,7 +119,7 @@ export async function createVenda(data) {
     const vendaData = {
       produtoId: parseInt(produtoId),
       quantidade: parseInt(quantidade),
-      precoVenda: parseFloat(produto.preco),
+      precoVenda: parseFloat(produto.precoVenda),
       valorTotal: parseFloat(valorTotal),
       entrada: isParcelado ? parseFloat(entrada) || 0 : parseFloat(valorTotal),
       formaPagamentoEntrada: formaPagamento === 'PROMISSORIA' && parseFloat(entrada) > 0 ? formaPagamentoEntrada.toUpperCase() : null,
