@@ -3,10 +3,32 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export async function PUT(request, { params }) {
+  let body;
   try {
-    const { incrementoValorPago, observacao, formaPagamentoParcela, bandeira, modalidade, dataPagamento } = await request.json();
+    // Await params - CORREÇÃO PRINCIPAL PRO NEXT.JS 15
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id);
+    if (isNaN(id)) {
+      return new Response(JSON.stringify({ error: 'ID inválido' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
 
-    const parcela = await prisma.parcela.findUnique({ where: { id: parseInt(params.id) } });
+    // Parse body com try/catch pra evitar crash se não JSON
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      console.error('Erro ao parsear JSON do body:', parseError);
+      return new Response(JSON.stringify({ error: 'Body inválido (não JSON)' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { incrementoValorPago, observacao, formaPagamentoParcela, bandeira, modalidade, dataPagamento } = body;
+
+    const parcela = await prisma.parcela.findUnique({ where: { id } });
     if (!parcela) {
       return new Response(JSON.stringify({ error: 'Parcela não encontrada' }), {
         status: 404,
@@ -62,8 +84,20 @@ export async function PUT(request, { params }) {
     const novoValorLiquidoTotal = parseFloat(parcela.valorLiquido || 0) + valorLiquidoParcela;
     const quitada = novoValorPagoTotal >= parseFloat(parcela.valor);
 
+    // Validação extra de data (evita futura, como no modal)
+    if (dataPagamento) {
+      const selectedDate = new Date(dataPagamento);
+      const today = new Date();
+      if (selectedDate > today) {
+        return new Response(JSON.stringify({ error: 'Data de pagamento não pode ser futura' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     const updatedParcela = await prisma.parcela.update({
-      where: { id: parseInt(params.id) },
+      where: { id },
       data: {
         valorPago: novoValorPagoTotal,
         observacao: observacao || parcela.observacao,
@@ -71,7 +105,7 @@ export async function PUT(request, { params }) {
         formaPagamento: formaPagamentoFormatada,
         taxa: taxaParcela,
         valorLiquido: novoValorLiquidoTotal,
-        dataPagamento: quitada ? (dataPagamento ? new Date(dataPagamento) : new Date()) : null, // Usa data do front
+        dataPagamento: quitada ? (dataPagamento ? new Date(dataPagamento) : new Date()) : null,
       },
     });
 
@@ -98,12 +132,15 @@ export async function PUT(request, { params }) {
   } catch (error) {
     console.error('Erro ao atualizar parcela:', {
       error: error.message,
-      parcelaId: params.id,
-      requestBody: await request.json().catch(() => ({})),
+      parcelaId: params ? (await params).id : 'desconhecido',
+      requestBody: body || 'não parseado',
     });
     return new Response(JSON.stringify({ error: 'Erro ao atualizar parcela', details: error.message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
+  } finally {
+    // Boa prática: desconecta (opcional, mas evita leaks)
+    await prisma.$disconnect();
   }
 }

@@ -107,37 +107,64 @@ export default function Vendas() {
     fetchVendas();
   };
 
-  const marcarParcelaComoPaga = async (
-    parcelaId,
-    incrementoValorPago,
-    observacao,
-    formaPagamentoParcela,
-    bandeira,
-    modalidade,
-    dataPagamento
-  ) => {
-    try {
-      const res = await fetch(`/api/parcelas/${parcelaId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          incrementoValorPago,
-          observacao,
-          pago: true,
-          formaPagamentoParcela,
-          bandeira,
-          modalidade,
-          dataPagamento,
-        }),
-      });
-      if (!res.ok) throw new Error('Erro ao marcar parcela como paga');
-      closeParcelasModal();
-      toast.success('Parcela marcada como paga!');
-    } catch (error) {
-      console.error('Erro ao marcar parcela:', error);
-      toast.error('Erro ao marcar parcela');
+  // const marcarParcelaComoPaga = async (
+  //   parcelaId,
+  //   incrementoValorPago,
+  //   observacao,
+  //   formaPagamentoParcela,
+  //   bandeira,
+  //   modalidade,
+  //   dataPagamento
+  // ) => {
+  //   try {
+  //     const res = await fetch(`/api/parcelas/${parcelaId}`, {
+  //       method: 'PUT',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({
+  //         incrementoValorPago,
+  //         observacao,
+  //         pago: true,
+  //         formaPagamentoParcela,
+  //         bandeira,
+  //         modalidade,
+  //         dataPagamento,
+  //       }),
+  //     });
+  //     if (!res.ok) throw new Error('Erro ao marcar parcela como paga');
+  //     closeParcelasModal();
+  //     toast.success('Parcela marcada como paga!');
+  //   } catch (error) {
+  //     console.error('Erro ao marcar parcela:', error);
+  //     toast.error('Erro ao marcar parcela');
+  //   }
+  // };
+  const marcarParcelaComoPaga = async (parcelaId, valorPago, observacao, forma, bandeira, modalidade, dataPagamento) => {
+  try {
+    const res = await fetch(`/api/parcelas/${parcelaId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        incrementoValorPago: valorPago,
+        observacao,
+        formaPagamentoParcela: forma,
+        bandeira,
+        modalidade,
+        dataPagamento,
+      }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'Erro na API');
     }
-  };
+
+    const data = await res.json();
+    toast.success('Parcela paga com sucesso!');
+    // Refresh parcelas ou venda
+  } catch (err) {
+    toast.error(err.message);
+  }
+};
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
