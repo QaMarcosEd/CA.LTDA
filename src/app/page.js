@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import ModalRegistroBaixa from '@/components/ui/modals/ModalRegistroBaixa';
 import ConfirmDeleteModal from '../components/ui/modals/ConfirmDeleteModal';
-// import ModalLote from '@/components/ui/modals/ModalCadastroLoteCalcados'; // Novo modal
 import ModalCadastroLoteCalçados from '@/components/ui/modals/ModalCadastroLoteCalcados';
 import toast from 'react-hot-toast';
 
@@ -167,15 +166,6 @@ export default function Home() {
 
         {/* Ações */}
         <div className="flex flex-col sm:flex-row gap-4 mb-8">
-          {/* <Link
-            href="produto/adicionar"
-            className="inline-flex items-center justify-center bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-poppins text-sm font-medium"
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-            </svg>
-            Adicionar Produto
-          </Link> */}
           <button
             onClick={() => setLoteModalOpen(true)}
             className="inline-flex items-center justify-center bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-poppins text-sm font-medium"
@@ -241,7 +231,7 @@ export default function Home() {
                   <td className="py-3 px-4 text-sm font-poppins text-gray-800">{p.referencia || 'N/A'}</td>
                   <td className="py-3 px-4 text-sm font-poppins text-gray-800">{p.cor}</td>
                   <td className="py-3 px-4 text-sm font-poppins text-gray-800">{p.quantidade}</td>
-                  <td className="py-3 px-4 text-sm font-poppins text-gray-800">R$ {p.preco.toFixed(2)}</td>
+                  <td className="py-3 px-4 text-sm font-poppins text-gray-800">R$ {p.precoVenda.toFixed(2)}</td>
                   <td className="py-3 px-4 text-sm font-poppins text-gray-800">{p.genero || 'N/A'}</td>
                   <td className="py-3 px-4 text-sm font-poppins text-gray-800">{p.modelo || 'N/A'}</td>
                   <td className="py-3 px-4 text-sm font-poppins text-gray-800">{p.marca || 'N/A'}</td>
@@ -320,13 +310,6 @@ export default function Home() {
           onConfirm={handleConfirmDelete}
           produtoNome={selectedDeleteProduto?.nome || ''}
         />
-
-        {/* Modal de lote */}
-        {/* <ModalLote
-          isOpen={loteModalOpen}
-          onClose={() => setLoteModalOpen(false)}
-          onSubmit={handleSubmitLote}
-        /> */}
 
         <ModalCadastroLoteCalçados
           isOpen={loteModalOpen}

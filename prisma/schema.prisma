@@ -83,7 +83,9 @@ model Produto {
   referencia       String?
   cor              String
   quantidade       Int
-  preco            Float
+  precoCusto       Float?   @default(0.0) // Novo: opcional, default 0
+  precoVenda       Float    // Novo: obrigatório, substitui preco
+  imagem           String?  // Novo: opcional, para URL da imagem
   genero           String?
   modelo           String?
   marca            String?

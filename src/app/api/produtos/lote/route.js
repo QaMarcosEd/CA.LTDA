@@ -11,4 +11,3 @@ export async function POST(request) {
     return new Response(JSON.stringify({ error: 'Erro ao processar lote', details: error.message }), { status: 500 });
   }
 }
-

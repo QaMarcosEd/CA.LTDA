@@ -33,7 +33,7 @@ export async function getAllProdutos({ marca, modelo, genero, tamanho, referenci
         where,
         _sum: { quantidade: true },
       }),
-      prisma.$queryRawUnsafe(`SELECT COALESCE(SUM("preco" * "quantidade"), 0) as valor_total FROM "Produto" ${Object.keys(where).length > 0 ? `WHERE ${Object.entries(where).map(([key, value]) => {
+      prisma.$queryRawUnsafe(`SELECT COALESCE(SUM("precoVenda" * "quantidade"), 0) as valor_total FROM "Produto" ${Object.keys(where).length > 0 ? `WHERE ${Object.entries(where).map(([key, value]) => {
         if (typeof value === 'object' && value.contains) {
           return `LOWER("${key}") LIKE LOWER('%${value.contains}%')`;
         } else if (typeof value === 'object' && value.equals) {
@@ -53,7 +53,7 @@ export async function getAllProdutos({ marca, modelo, genero, tamanho, referenci
           referencia: true,
           cor: true,
           quantidade: true,
-          preco: true,
+          precoVenda: true,
           genero: true,
           modelo: true,
           marca: true,
@@ -64,7 +64,7 @@ export async function getAllProdutos({ marca, modelo, genero, tamanho, referenci
       }),
     ]);
 
-    console.log('Generated SQL:', `SELECT COALESCE(SUM("preco" * "quantidade"), 0) as valor_total FROM "Produto" ${Object.keys(where).length > 0 ? `WHERE ${Object.entries(where).map(([key, value]) => {
+    console.log('Generated SQL:', `SELECT COALESCE(SUM("precoVenda" * "quantidade"), 0) as valor_total FROM "Produto" ${Object.keys(where).length > 0 ? `WHERE ${Object.entries(where).map(([key, value]) => {
       if (typeof value === 'object' && value.contains) {
         return `LOWER("${key}") LIKE LOWER('%${value.contains}%')`;
       } else if (typeof value === 'object' && value.equals) {
@@ -164,8 +164,5 @@ export async function getProdutoById(id) {
     throw error;
   }
 }
-
-
-
 
 

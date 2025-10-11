@@ -1,3 +1,4 @@
+// ModalCadastroLoteCalçados.jsx
 'use client';
 
 import { useState } from 'react';
@@ -9,7 +10,9 @@ export default function ModalCadastroLoteCalçados({ isOpen, onClose, onSubmit }
     nome: '',
     referencia: '',
     cor: '',
-    preco: '',
+    precoCusto: '',
+    precoVenda: '',
+    imagem: '',
     genero: '',
     modelo: '',
     marca: '',
@@ -66,13 +69,17 @@ export default function ModalCadastroLoteCalçados({ isOpen, onClose, onSubmit }
       toast.error('Data de Recebimento não pode ser futura');
       return;
     }
+    if (!genericos.precoVenda || parseFloat(genericos.precoVenda) <= 0) {
+      toast.error('Preço de venda é obrigatório e deve ser maior que 0');
+      return;
+    }
 
     const data = { genericos, variacoes };
     const response = await onSubmit(data);
     if (response.status === 201) {
       toast.success('Lote cadastrado com sucesso! ✅');
       onClose();
-      setGenericos({ nome: '', referencia: '', cor: '', preco: '', genero: '', modelo: '', marca: '', lote: '' });
+      setGenericos({ nome: '', referencia: '', cor: '', precoCusto: '', precoVenda: '', imagem: '', genero: '', modelo: '', marca: '', lote: '', dataRecebimento: format(new Date(), 'yyyy-MM-dd') });
       setVariacoes([]);
     } else {
       toast.error(response.data.error || 'Erro ao cadastrar lote ❌');
@@ -112,13 +119,38 @@ export default function ModalCadastroLoteCalçados({ isOpen, onClose, onSubmit }
               className="border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
             />
             <input
-              name="preco"
+              name="precoCusto"
               type="number"
-              value={genericos.preco}
+              value={genericos.precoCusto}
               onChange={handleGenericosChange}
-              placeholder="Preço (R$)"
+              placeholder="Preço de Custo (R$) (opcional)"
               className="border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
             />
+            <input
+              name="precoVenda"
+              type="number"
+              value={genericos.precoVenda}
+              onChange={handleGenericosChange}
+              placeholder="Preço de Venda (R$)"
+              className="border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
+            />
+            <input
+              name="imagem"
+              value={genericos.imagem}
+              onChange={handleGenericosChange}
+              placeholder="URL da Imagem (opcional)"
+              className="border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
+            />
+            {genericos.imagem && (
+              <div className="col-span-2">
+                <img
+                  src={genericos.imagem}
+                  alt="Prévia da imagem"
+                  className="max-w-[200px] max-h-[200px] mt-2 rounded-lg"
+                  onError={() => toast.error('URL da imagem inválida')}
+                />
+              </div>
+            )}
             <select
               name="genero"
               value={genericos.genero}
@@ -232,5 +264,6 @@ export default function ModalCadastroLoteCalçados({ isOpen, onClose, onSubmit }
     </div>
   );
 }
+
 
 
