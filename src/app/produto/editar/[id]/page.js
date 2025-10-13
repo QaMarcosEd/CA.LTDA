@@ -18,7 +18,8 @@ export default function Editar() {
     marca: '',
     disponivel: true,
     dataRecebimento: '',
-    lote: '' // Adiciona lote
+    lote: '', // Adiciona lote,
+    imagem: '' // Adicionado
   });
   const router = useRouter();
   const { id } = useParams();
@@ -45,7 +46,8 @@ useEffect(() => {
           marca: produto.marca || '',
           disponivel: produto.quantidade > 0,
           dataRecebimento: produto.dataRecebimento ? format(new Date(produto.dataRecebimento), 'yyyy-MM-dd') : '',
-          lote: produto.lote || '' // Adiciona lote
+          lote: produto.lote || '', // Adiciona lote
+          imagem: produto.imagem || ''
         })
       })
       .catch(err => console.error('Erro ao carregar produto:', err))
@@ -156,6 +158,14 @@ const handleSubmit = async (e) => {
             step="0.01"
             value={form.precoVenda}
             placeholder="Preço"
+            onChange={handleChange}
+            className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200 placeholder-gray-500 text-gray-800 text-base"
+          />
+          <input
+            name="imagem"
+            type="text"
+            value={form.imagem}
+            placeholder="URL da imagem (ex: http://localhost:3000/images/tenis.jpg)"
             onChange={handleChange}
             className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200 placeholder-gray-500 text-gray-800 text-base"
           />
