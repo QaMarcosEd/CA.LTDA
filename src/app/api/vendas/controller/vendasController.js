@@ -309,3 +309,4 @@ function calcularResumoVendas(vendas) {
 
   return { totalQuitado: totalQuitado.toFixed(2), totalPendente: totalPendente.toFixed(2), porForma };
 }
+
