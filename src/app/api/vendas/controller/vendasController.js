@@ -226,6 +226,49 @@ export async function getVendasPorProduto(produtoId) {
   }
 }
 
+// export async function getTodasAsVendas(filtros = {}) {
+//   try {
+//     const { formaPagamento, dataInicio, dataFim, status, resumo } = filtros;
+//     const whereClause = {
+//       dataVenda: {},
+//     };
+
+//     if (dataInicio) whereClause.dataVenda.gte = new Date(dataInicio);
+//     if (dataFim) whereClause.dataVenda.lte = new Date(dataFim);
+//     if (status && status !== 'TODAS') whereClause.status = status;
+//     if (formaPagamento && formaPagamento !== 'TODAS') {
+//       if (formaPagamento === 'CARTAO') {
+//         whereClause.formaPagamento = { contains: 'CARTAO' };
+//       } else {
+//         whereClause.formaPagamento = { equals: formaPagamento };
+//       }
+//     }
+
+//     console.log('Where Clause completa:', whereClause);
+
+//     const vendas = await prisma.venda.findMany({
+//       where: whereClause,
+//       orderBy: { dataVenda: 'desc' },
+//       include: {
+//         produto: true,
+//         cliente: { select: { nome: true } },
+//         parcelas: true,
+//       },
+//     });
+
+//     const resumoData = calcularResumoVendas(vendas);
+
+//     if (resumo) {
+//       return { status: 200, data: { resumo: resumoData } };
+//     }
+
+//     return { status: 200, data: { vendas, resumo: resumoData } };
+//   } catch (error) {
+//     console.error('Erro ao listar vendas filtradas:', error);
+//     return { status: 500, data: { error: 'Erro ao listar vendas: ' + error.message } };
+//   }
+// }
+
 export async function getTodasAsVendas(filtros = {}) {
   try {
     const { formaPagamento, dataInicio, dataFim, status, resumo } = filtros;
@@ -258,11 +301,62 @@ export async function getTodasAsVendas(filtros = {}) {
 
     const resumoData = calcularResumoVendas(vendas);
 
+    // NOVO: Ranking de modelos mais vendidos via raw query (pra join com Produto.modelo)
+    let rankingModelos = [];
+    try {
+      const whereConditions = [];
+      const params = [];
+
+      if (dataInicio) {
+        whereConditions.push(`"Venda"."dataVenda" >= ?`);
+        params.push(new Date(dataInicio).toISOString());
+      }
+      if (dataFim) {
+        whereConditions.push(`"Venda"."dataVenda" <= ?`);
+        params.push(new Date(dataFim).toISOString());
+      }
+      if (status && status !== 'TODAS') {
+        whereConditions.push(`"Venda"."status" = ?`);
+        params.push(status);
+      }
+      if (formaPagamento && formaPagamento !== 'TODAS') {
+        if (formaPagamento === 'CARTAO') {
+          whereConditions.push(`"Venda"."formaPagamento" LIKE ?`);
+          params.push('%CARTAO%');
+        } else {
+          whereConditions.push(`"Venda"."formaPagamento" = ?`);
+          params.push(formaPagamento);
+        }
+      }
+
+      let whereSQL = whereConditions.length > 0 ? 'WHERE ' + whereConditions.join(' AND ') : '';
+
+      const rawQuery = `
+        SELECT COALESCE("Produto"."modelo", 'Desconhecido') AS modelo, SUM("Venda"."quantidade") AS qtyVendida
+        FROM "Venda"
+        LEFT JOIN "Produto" ON "Venda"."produtoId" = "Produto"."id"
+        ${whereSQL}
+        GROUP BY "Produto"."modelo"
+        HAVING SUM("Venda"."quantidade") > 0
+        ORDER BY qtyVendida DESC
+      `;
+
+      const rawResults = await prisma.$queryRawUnsafe(rawQuery, ...params);
+      rankingModelos = rawResults.map(row => ({
+        modelo: row.modelo || 'Desconhecido',
+        qtyVendida: Number(row.qtyVendida) || 0,
+      }));
+    } catch (rawError) {
+      console.error('Erro no ranking raw query:', rawError);
+      // Não crasha o resto – ranking fica vazio
+      rankingModelos = [];
+    }
+
     if (resumo) {
       return { status: 200, data: { resumo: resumoData } };
     }
 
-    return { status: 200, data: { vendas, resumo: resumoData } };
+    return { status: 200, data: { vendas, resumo: resumoData, rankingModelos } };
   } catch (error) {
     console.error('Erro ao listar vendas filtradas:', error);
     return { status: 500, data: { error: 'Erro ao listar vendas: ' + error.message } };

@@ -249,290 +249,323 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit,
   if (!isOpen || !produto) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 text-gray-600">
-      <div className="bg-white rounded-lg p-4 w-11/12 max-w-md max-h-[90vh] overflow-y-auto relative">
-        <h2 className="text-xl font-bold font-poppins text-gray-900 mb-4">
-          Registrar Venda - {produto.nome}
-        </h2>
-        <p className="text-gray-600 font-poppins text-sm mb-2">
-          Estoque atual: {produto.quantidade}
-        </p>
-        <p className="text-gray-600 font-poppins text-sm mb-4">
-          Preço do produto: R$ {produto.precoVenda.toFixed(2)}
-        </p>
-
-        <div className="mb-4">
-          <label className="block text-sm font-medium font-poppins text-gray-700">
-            Quantidade
-          </label>
-          <input
-            type="number"
-            value={quantidade}
-            onChange={(e) => setQuantidade(e.target.value)}
-            placeholder="Quantidade a vender"
-            min="1"
-            max={produto.quantidade}
-            className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
-          />
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-sm font-medium font-poppins text-gray-700">
-            Cliente
-          </label>
-          {!isNewCliente ? (
-            <select
-              value={clienteNome}
-              onChange={(e) => setClienteNome(e.target.value)}
-              className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
-            >
-              <option value="">Selecione um cliente</option>
-              {clientes.map((cliente) => (
-                <option key={cliente.id} value={cliente.nome}>
-                  {cliente.nome}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <div className="space-y-2">
-              <input
-                type="text"
-                value={clienteNome}
-                onChange={(e) => setClienteNome(e.target.value)}
-                placeholder="Nome do novo cliente"
-                className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
-              />
-              <input
-                type="text"
-                value={apelido}
-                onChange={(e) => setApelido(e.target.value)}
-                placeholder="Apelido (opcional)"
-                className="border border-gray-300 p-3 w-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
-              />
-              <input
-                type="text"
-                value={telefone}
-                onChange={(e) => setTelefone(formatPhoneNumber(e.target.value))}
-                placeholder="(11) 99999-9999"
-                className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
-              />
-            </div>
-          )}
-          <button
-            type="button"
-            onClick={() => {
-              setIsNewCliente(!isNewCliente);
-              if (!isNewCliente) {
-                setClienteNome('');
-                setApelido('');
-                setTelefone('');
-              }
-            }}
-            className="mt-2 text-blue-600 hover:text-blue-800 font-poppins text-sm"
-          >
-            {isNewCliente ? 'Selecionar cliente existente' : 'Cadastrar novo cliente'}
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 transition-opacity duration-300 text-gray-500">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full m-4 flex flex-col max-h-[90vh] overflow-hidden transform transition-all duration-300">
+        {/* Header estilizado com emoji */}
+        <div className="p-6 bg-gradient-to-r from-green-500 to-green-600 text-white flex items-center justify-between rounded-t-2xl">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🛒</span>
+            <h2 className="text-2xl font-bold font-poppins">Registrar Venda - {produto.nome}</h2>
+          </div>
+          <button onClick={onClose} aria-label="Fechar modal" className="text-white hover:text-gray-200 transition text-2xl">
+            ❌
           </button>
         </div>
 
-        <div className="mb-4">
-          <label className="block text-sm font-medium font-poppins text-gray-700">
-            Valor Total
-          </label>
-          <input
-            type="number"
-            step="0.01"
-            value={valorTotal}
-            onChange={(e) => setValorTotal(e.target.value)}
-            placeholder="Valor total (R$)"
-            className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
-          />
-        </div>
+        {/* Conteúdo com scroll - Labels flutuantes padronizados */}
+        <div className="flex-1 overflow-y-auto p-6 bg-gray-50 space-y-6">
+          {/* Infos produto */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-700 font-poppins text-sm bg-white p-4 rounded-lg shadow-inner border border-gray-200">
+            <p>Estoque atual: <span className="font-bold text-green-600">{produto.quantidade}</span></p>
+            <p>Preço unitário: <span className="font-bold text-green-600">R$ {produto.precoVenda.toFixed(2)}</span></p>
+          </div>
 
-        <div className="mb-4">
-          <label className="block text-sm font-medium font-poppins text-gray-700">
-            Forma de Pagamento
-          </label>
-          <select
-            value={formaPagamento}
-            onChange={(e) => {
-              setFormaPagamento(e.target.value);
-              setBandeira('');
-              setModalidade('');
-              setTaxa(0);
-              setValorLiquido(valorTotal || 0);
-              setFormaPagamentoEntrada('DINHEIRO');
-            }}
-            className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
-          >
-            <option value="">Selecione a forma</option>
-            <option value="DINHEIRO">Dinheiro à vista</option>
-            <option value="PIX">Pix à vista</option>
-            <option value="CARTAO">Cartão</option>
-            <option value="PROMISSORIA">Promissória</option>
-          </select>
-        </div>
+          {/* Quantidade */}
+          <div className="relative">
+            <input
+              type="number"
+              value={quantidade}
+              onChange={(e) => setQuantidade(e.target.value)}
+              placeholder=" "
+              min="1"
+              max={produto.quantidade}
+              className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder-transparent font-poppins text-sm"
+            />
+            <label className="absolute left-4 -top-2 text-xs bg-gray-50 px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+              Quantidade <span className="text-red-500 ml-1">*</span>
+            </label>
+          </div>
 
-        {formaPagamento === 'CARTAO' && (
-          <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium font-poppins text-gray-700">
-                Bandeira
-              </label>
-              <select
-                value={bandeira}
-                onChange={(e) => {
-                  setBandeira(e.target.value);
-                  setModalidade('');
-                  setTaxa(0);
-                  setValorLiquido(valorTotal || 0);
-                }}
-                className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
-              >
-                <option value="">Selecione a bandeira</option>
-                {[...new Set(taxasCartao.map((t) => t.bandeira))].map((band) => (
-                  <option key={band} value={band}>{band}</option>
-                ))}
-              </select>
-            </div>
-            {bandeira && (
-              <div>
-                <label className="block text-sm font-medium font-poppins text-gray-700">
-                  Modalidade
-                </label>
+          {/* Cliente - Com sub-inputs */}
+          <div className="space-y-3">
+            <div className="relative">
+              {!isNewCliente ? (
                 <select
-                  value={modalidade}
-                  onChange={(e) => {
-                    setModalidade(e.target.value);
-                    const taxaCartao = taxasCartao.find(
-                      (t) => t.bandeira === bandeira && t.modalidade === e.target.value
-                    );
-                    if (taxaCartao && valorTotal) {
-                      const taxaPercentual = taxaCartao.taxaPercentual / 100;
-                      const novaTaxa = (parseFloat(valorTotal) * taxaPercentual).toFixed(2);
-                      setTaxa(novaTaxa);
-                      setValorLiquido((parseFloat(valorTotal) - parseFloat(novaTaxa)).toFixed(2));
-                    } else {
+                  value={clienteNome}
+                  onChange={(e) => setClienteNome(e.target.value)}
+                  className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 font-poppins text-sm"
+                >
+                  <option value="">Selecione um cliente</option>
+                  {clientes.map((cliente) => (
+                    <option key={cliente.id} value={cliente.nome}>{cliente.nome}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="space-y-4">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={clienteNome}
+                      onChange={(e) => setClienteNome(e.target.value)}
+                      placeholder=" "
+                      className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder-transparent font-poppins text-sm"
+                    />
+                    <label className="absolute left-4 -top-2 text-xs bg-gray-50 px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+                      Nome do novo cliente <span className="text-red-500 ml-1">*</span>
+                    </label>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={apelido}
+                      onChange={(e) => setApelido(e.target.value)}
+                      placeholder=" "
+                      className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder-transparent font-poppins text-sm"
+                    />
+                    <label className="absolute left-4 -top-2 text-xs bg-gray-50 px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+                      Apelido (opcional)
+                    </label>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={telefone}
+                      onChange={(e) => setTelefone(formatPhoneNumber(e.target.value))}
+                      placeholder=" "
+                      className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder-transparent font-poppins text-sm"
+                    />
+                    <label className="absolute left-4 -top-2 text-xs bg-gray-50 px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+                      (11) 99999-9999
+                    </label>
+                  </div>
+                </div>
+              )}
+              <label className="absolute left-4 -top-2 text-xs bg-gray-50 px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+                Cliente <span className="text-red-500 ml-1">*</span>
+              </label>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setIsNewCliente(!isNewCliente);
+                if (!isNewCliente) {
+                  setClienteNome('');
+                  setApelido('');
+                  setTelefone('');
+                }
+              }}
+              className="text-green-600 hover:text-green-800 font-poppins text-sm font-medium transition"
+            >
+              {isNewCliente ? 'Selecionar cliente existente' : 'Cadastrar novo cliente'}
+            </button>
+          </div>
+
+          {/* Valor Total */}
+          <div className="relative">
+            <input
+              type="number"
+              step="0.01"
+              value={valorTotal}
+              onChange={(e) => setValorTotal(e.target.value)}
+              placeholder=" "
+              className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder-transparent font-poppins text-sm"
+            />
+            <label className="absolute left-4 -top-2 text-xs bg-gray-50 px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+              Valor Total (R$) <span className="text-red-500 ml-1">*</span>
+            </label>
+          </div>
+
+          {/* Forma de Pagamento */}
+          <div className="relative">
+            <select
+              value={formaPagamento}
+              onChange={(e) => {
+                setFormaPagamento(e.target.value);
+                setBandeira('');
+                setModalidade('');
+                setTaxa(0);
+                setValorLiquido(valorTotal || 0);
+                setFormaPagamentoEntrada('DINHEIRO');
+              }}
+              className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 font-poppins text-sm"
+            >
+              <option value="">Selecione a forma</option>
+              <option value="DINHEIRO">Dinheiro à vista</option>
+              <option value="PIX">Pix à vista</option>
+              <option value="CARTAO">Cartão</option>
+              <option value="PROMISSORIA">Promissória</option>
+            </select>
+            <label className="absolute left-4 -top-2 text-xs bg-gray-50 px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+              Forma de Pagamento <span className="text-red-500 ml-1">*</span>
+            </label>
+          </div>
+
+          {/* Cartão */}
+          {formaPagamento === 'CARTAO' && (
+            <div className="space-y-5 bg-white p-4 rounded-lg shadow-inner border border-gray-200">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div className="relative">
+                  <select
+                    value={bandeira}
+                    onChange={(e) => {
+                      setBandeira(e.target.value);
+                      setModalidade('');
                       setTaxa(0);
                       setValorLiquido(valorTotal || 0);
-                    }
-                  }}
-                  className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
-                >
-                  <option value="">Selecione a modalidade</option>
-                  {taxasCartao
-                    .filter((t) => t.bandeira === bandeira)
-                    .map((t) => (
-                      <option key={t.modalidade} value={t.modalidade}>
-                        {t.modalidade.replace('_', ' ').toLowerCase()}
-                      </option>
-                    ))}
-                </select>
-              </div>
-            )}
-            {taxa > 0 && (
-              <p className="text-sm font-poppins text-gray-600 col-span-2">
-                Taxa: R$ {taxa} | Valor Líquido: R$ {valorLiquido}
-              </p>
-            )}
-          </div>
-        )}
-
-        <div className="mb-4">
-          <label className="block text-sm font-medium font-poppins text-gray-700">
-            Data da Venda
-          </label>
-          <input
-            type="date"
-            value={dataVenda}
-            onChange={(e) => setDataVenda(e.target.value)}
-            max={format(new Date(), 'yyyy-MM-dd')}
-            className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
-          />
-          <p className="text-sm font-poppins text-gray-600 mt-1">
-            Data selecionada: {format(parseISO(dataVenda), 'dd/MM/yyyy')}
-          </p>
-        </div>
-
-        {formaPagamento === 'PROMISSORIA' && (
-          <div className="mb-4">
-            <label className="flex items-center text-sm font-medium font-poppins text-gray-700">
-              <input
-                type="checkbox"
-                checked={isParcelado}
-                onChange={(e) => setIsParcelado(e.target.checked)}
-                className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              Pagar em parcelas
-            </label>
-            {isParcelado && (
-              <div className="mt-2 space-y-2">
-                <div>
-                  <label className="block text-sm font-medium font-poppins text-gray-700">
-                    Número de Parcelas
-                  </label>
-                  <select
-                    value={numeroParcelas}
-                    onChange={(e) => setNumeroParcelas(e.target.value)}
-                    className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
+                    }}
+                    className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 font-poppins text-sm"
                   >
-                    {[...Array(12).keys()].map((i) => (
-                      <option key={i + 1} value={String(i + 1)}>
-                        {i + 1}
-                      </option>
+                    <option value="">Selecione a bandeira</option>
+                    {[...new Set(taxasCartao.map((t) => t.bandeira))].map((band) => (
+                      <option key={band} value={band}>{band}</option>
                     ))}
                   </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium font-poppins text-gray-700">
-                    Entrada (R$)
+                  <label className="absolute left-4 -top-2 text-xs bg-gray-50 px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+                    Bandeira <span className="text-red-500 ml-1">*</span>
                   </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={entrada}
-                    onChange={(e) => setEntrada(e.target.value)}
-                    placeholder="0.00"
-                    className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
-                  />
                 </div>
-                {parseFloat(entrada) > 0 && (
-                  <div>
-                    <label className="block text-sm font-medium font-poppins text-gray-700">
-                      Forma de Pagamento da Entrada
-                    </label>
+                {bandeira && (
+                  <div className="relative">
                     <select
-                      value={formaPagamentoEntrada}
-                      onChange={(e) => setFormaPagamentoEntrada(e.target.value)}
-                      className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
+                      value={modalidade}
+                      onChange={(e) => {
+                        setModalidade(e.target.value);
+                        const taxaCartao = taxasCartao.find(
+                          (t) => t.bandeira === bandeira && t.modalidade === e.target.value
+                        );
+                        if (taxaCartao && valorTotal) {
+                          const taxaPercentual = taxaCartao.taxaPercentual / 100;
+                          const novaTaxa = (parseFloat(valorTotal) * taxaPercentual).toFixed(2);
+                          setTaxa(novaTaxa);
+                          setValorLiquido((parseFloat(valorTotal) - parseFloat(novaTaxa)).toFixed(2));
+                        } else {
+                          setTaxa(0);
+                          setValorLiquido(valorTotal || 0);
+                        }
+                      }}
+                      className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 font-poppins text-sm"
                     >
-                      <option value="DINHEIRO">Dinheiro</option>
-                      <option value="PIX">Pix</option>
+                      <option value="">Selecione a modalidade</option>
+                      {taxasCartao
+                        .filter((t) => t.bandeira === bandeira)
+                        .map((t) => (
+                          <option key={t.modalidade} value={t.modalidade}>
+                            {t.modalidade.replace('_', ' ').toLowerCase()}
+                          </option>
+                        ))}
                     </select>
-                    <p className="text-xs font-poppins text-gray-500 mt-1">
-                      Entrada deve ser paga em PIX ou Dinheiro
-                    </p>
+                    <label className="absolute left-4 -top-2 text-xs bg-gray-50 px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+                      Modalidade <span className="text-red-500 ml-1">*</span>
+                    </label>
                   </div>
                 )}
-                <p className="text-sm font-poppins text-gray-600">
-                  Valor por parcela: R$ {calcularValorParcela()}
-                </p>
               </div>
-            )}
-          </div>
-        )}
+              {taxa > 0 && (
+                <p className="text-sm font-poppins text-gray-600">
+                  Taxa: <span className="font-bold">R$ {taxa}</span> | Valor Líquido: <span className="font-bold">R$ {valorLiquido}</span>
+                </p>
+              )}
+            </div>
+          )}
 
-        <div className="sticky bottom-0 bg-white pt-4 flex justify-end space-x-2">
+          {/* Data da Venda */}
+          <div className="relative">
+            <input
+              type="date"
+              value={dataVenda}
+              onChange={(e) => setDataVenda(e.target.value)}
+              max={format(new Date(), 'yyyy-MM-dd')}
+              className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 font-poppins text-sm"
+            />
+            <label className="absolute left-4 -top-2 text-xs bg-gray-50 px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+              Data da Venda <span className="text-red-500 ml-1">*</span>
+            </label>
+            <p className="text-sm font-poppins text-gray-600 mt-3">
+              Data selecionada: <span className="font-medium">{format(parseISO(dataVenda), 'dd/MM/yyyy')}</span>
+            </p>
+          </div>
+
+          {/* Promissória */}
+          {formaPagamento === 'PROMISSORIA' && (
+            <div className="space-y-5 bg-white p-4 rounded-lg shadow-inner border border-gray-200">
+              <label className="flex items-center text-sm font-medium font-poppins text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={isParcelado}
+                  onChange={(e) => setIsParcelado(e.target.checked)}
+                  className="mr-2 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                />
+                Pagar em parcelas
+              </label>
+              {isParcelado && (
+                <div className="space-y-5">
+                  <div className="relative">
+                    <select
+                      value={numeroParcelas}
+                      onChange={(e) => setNumeroParcelas(e.target.value)}
+                      className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 font-poppins text-sm"
+                    >
+                      {[...Array(12).keys()].map((i) => (
+                        <option key={i + 1} value={String(i + 1)}>{i + 1}</option>
+                      ))}
+                    </select>
+                    <label className="absolute left-4 -top-2 text-xs bg-gray-50 px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+                      Número de Parcelas <span className="text-red-500 ml-1">*</span>
+                    </label>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={entrada}
+                      onChange={(e) => setEntrada(e.target.value)}
+                      placeholder=" "
+                      className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder-transparent font-poppins text-sm"
+                    />
+                    <label className="absolute left-4 -top-2 text-xs bg-gray-50 px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+                      Entrada (R$)
+                    </label>
+                  </div>
+                  {parseFloat(entrada) > 0 && (
+                    <div className="relative">
+                      <select
+                        value={formaPagamentoEntrada}
+                        onChange={(e) => setFormaPagamentoEntrada(e.target.value)}
+                        className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 font-poppins text-sm"
+                      >
+                        <option value="DINHEIRO">Dinheiro</option>
+                        <option value="PIX">Pix</option>
+                      </select>
+                      <label className="absolute left-4 -top-2 text-xs bg-gray-50 px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+                        Forma de Pagamento da Entrada
+                      </label>
+                      <p className="text-xs font-poppins text-gray-500 mt-3">Entrada deve ser paga em PIX ou Dinheiro</p>
+                    </div>
+                  )}
+                  <p className="text-sm font-poppins text-gray-600">
+                    Valor por parcela: <span className="font-bold">R$ {calcularValorParcela()}</span>
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer com botões e emojis */}
+        <div className="p-6 bg-white border-t border-gray-200 flex gap-4">
           <button
             onClick={onClose}
-            className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400 font-poppins text-sm"
+            aria-label="Cancelar venda"
+            className="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-400 transition-all duration-200 flex items-center justify-center gap-2 shadow-md text-sm md:text-base font-poppins"
           >
-            Cancelar
+            ❌ Cancelar
           </button>
           <button
             onClick={handleConfirm}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-poppins text-sm"
+            aria-label="Confirmar venda"
+            className="flex-1 bg-green-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-600 transition-all duration-200 flex items-center justify-center gap-2 shadow-md text-sm md:text-base font-poppins"
           >
-            Confirmar
+            ✅ Confirmar
           </button>
         </div>
       </div>

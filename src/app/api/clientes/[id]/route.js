@@ -87,3 +87,71 @@ export async function GET(request, { params }) {
     });
   }
 }
+
+// NOVO: PUT pra editar cliente
+export async function PUT(request, { params }) {
+  try {
+    const id = parseInt(params.id);
+    if (!id || isNaN(id)) {
+      return new Response(JSON.stringify({ error: 'ID inválido' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const body = await request.json();
+    const { nome, apelido, telefone } = body;
+
+    if (!nome || nome.trim() === '') {
+      return new Response(JSON.stringify({ error: 'Nome é obrigatório' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Checa se nome já existe (exceto ele mesmo)
+    const existingCliente = await prisma.cliente.findFirst({
+      where: { nome: nome.trim(), NOT: { id } },
+    });
+    if (existingCliente) {
+      return new Response(JSON.stringify({ error: 'Nome já usado por outro cliente' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const updatedCliente = await prisma.cliente.update({
+      where: { id },
+      data: {
+        nome: nome.trim(),
+        apelido: apelido?.trim() || null,
+        telefone: telefone?.trim() || null,
+      },
+    });
+
+    return new Response(JSON.stringify(updatedCliente), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Erro ao editar cliente:', error);
+    if (error.code === 'P2025') { // Não encontrado
+      return new Response(JSON.stringify({ error: 'Cliente não encontrado' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    if (error.code === 'P2002') { // Unique violation fallback
+      return new Response(JSON.stringify({ error: 'Nome já em uso' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    return new Response(JSON.stringify({ error: 'Erro interno ao editar cliente', details: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } finally {
+    await prisma.$disconnect();
+  }
+}

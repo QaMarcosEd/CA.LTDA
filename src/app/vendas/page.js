@@ -1,4 +1,3 @@
-// src/app/vendas/page.js
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -10,6 +9,7 @@ import ModalGerenciarParcelas from '@/components/ui/modals/ModalGerenciarParcela
 export default function Vendas() {
   const [vendas, setVendas] = useState([]);
   const [resumo, setResumo] = useState({ totalQuitado: '0.00', totalPendente: '0.00', porForma: { PIX: 0, DINHEIRO: 0, CARTAO: 0, PROMISSORIA: 0 } });
+  const [rankingModelos, setRankingModelos] = useState([]); // NOVO: State pro ranking de modelos
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedVenda, setSelectedVenda] = useState(null);
@@ -80,6 +80,7 @@ export default function Vendas() {
       console.log('Dados recebidos:', data); // Depuração
       setVendas(data.vendas || []);
       setResumo(data.resumo || { totalQuitado: '0.00', totalPendente: '0.00', porForma: { PIX: 0, DINHEIRO: 0, CARTAO: 0, PROMISSORIA: 0 } });
+      setRankingModelos(data.rankingModelos || []); // NOVO: Set do ranking
     } catch (error) {
       console.error('Erro no fetchVendas:', error);
       setError('Erro ao carregar vendas');
@@ -108,36 +109,37 @@ export default function Vendas() {
   };
 
   const marcarParcelaComoPaga = async (parcelaId, valorPago, observacao, forma, bandeira, modalidade, dataPagamento) => {
-  try {
-    const res = await fetch(`/api/parcelas/${parcelaId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        incrementoValorPago: valorPago,
-        observacao,
-        formaPagamentoParcela: forma,
-        bandeira,
-        modalidade,
-        dataPagamento,
-      }),
-    });
+    try {
+      const res = await fetch(`/api/parcelas/${parcelaId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          incrementoValorPago: valorPago,
+          observacao,
+          formaPagamentoParcela: forma,
+          bandeira,
+          modalidade,
+          dataPagamento,
+        }),
+      });
 
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.error || 'Erro na API');
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Erro na API');
+      }
+
+      const data = await res.json();
+      toast.success('Parcela paga com sucesso!');
+      // Refresh parcelas ou venda
+    } catch (err) {
+      toast.error(err.message);
     }
-
-    const data = await res.json();
-    toast.success('Parcela paga com sucesso!');
-    // Refresh parcelas ou venda
-  } catch (err) {
-    toast.error(err.message);
-  }
-};
+  };
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <p className="text-lg font-medium font-poppins text-gray-600 animate-pulse">Carregando vendas...</p>
+      <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-green-500 border-solid"></div>
+              <span className="ml-3 text-gray-600 font-poppins">Carregando...</span>
     </div>
   );
 
@@ -173,6 +175,33 @@ export default function Vendas() {
               <p className="text-2xl font-bold text-purple-600">R$ {((resumo.porForma?.CARTAO || 0) + (resumo.porForma?.PROMISSORIA || 0)).toFixed(2)}</p>
             </div>
           </div>
+        </div>
+
+        {/* NOVO: Seção de Ranking de Modelos Mais Vendidos */}
+        <div className="bg-white rounded-lg p-6 mb-8 shadow">
+          <h2 className="text-xl font-bold mb-4 text-gray-600">Ranking de Modelos Mais Vendidos (no período)</h2>
+          {rankingModelos.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold font-poppins text-gray-600 uppercase tracking-wider">Modelo</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold font-poppins text-gray-600 uppercase tracking-wider">Unidades Vendidas</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {rankingModelos.map((item, index) => (
+                    <tr key={index} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 text-sm font-poppins text-gray-900">{item.modelo}</td>
+                      <td className="px-4 py-3 text-sm font-poppins text-gray-900">{item.qtyVendida}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500 font-poppins">Nenhum dado de vendas no período filtrado.</p>
+          )}
         </div>
 
         {/* Seção de Filtros */}

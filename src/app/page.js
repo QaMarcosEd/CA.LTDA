@@ -5,6 +5,7 @@ import Link from 'next/link';
 import ModalRegistroBaixa from '@/components/ui/modals/ModalRegistroBaixa';
 import ConfirmDeleteModal from '../components/ui/modals/ConfirmDeleteModal';
 import ModalCadastroLoteCalçados from '@/components/ui/modals/ModalCadastroLoteCalcados';
+import EditarProdutoModal from '@/components/ui/modals/EditarProdutoModal';
 import toast from 'react-hot-toast';
 
 export default function Home() {
@@ -20,6 +21,9 @@ export default function Home() {
   const [referenciaFiltro, setReferenciaFiltro] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedEditId, setSelectedEditId] = useState(null);
 
   const fetchProdutos = async (filtros = {}, pg = 1) => {
     setLoading(true);
@@ -121,10 +125,13 @@ export default function Home() {
     return { status: response.status, data: result };
   };
 
+
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <p className="text-lg font-medium font-poppins text-gray-600 animate-pulse">Carregando estoque...</p>
+      <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-green-500 border-solid"></div>
+              <span className="ml-3 text-gray-600 font-poppins">Carregando...</span>
     </div>
+    
   );
 
   return (
@@ -246,12 +253,15 @@ export default function Home() {
                     </span>
                   </td>
                   <td className="py-3 px-4 flex flex-wrap gap-2">
-                    <Link
-                      href={`produto/editar/${p.id}`}
+                    <button
+                      onClick={() => {
+                        setSelectedEditId(p.id);
+                        setEditModalOpen(true);
+                      }}
                       className="text-green-600 hover:text-green-800 font-poppins text-sm font-medium"
                     >
                       Editar
-                    </Link>
+                    </button>
                     <button
                       onClick={() => handleOpenDeleteModal(p)}
                       className="text-red-600 hover:text-red-800 font-poppins text-sm font-medium"
@@ -316,7 +326,18 @@ export default function Home() {
           onClose={() => setLoteModalOpen(false)}
           onSubmit={handleSubmitLote}
         />
+
+        <EditarProdutoModal
+          isOpen={editModalOpen}
+          onClose={() => {
+            setEditModalOpen(false);
+            setSelectedEditId(null);
+          }}
+          produtoId={selectedEditId}
+          onSuccess={() => fetchProdutos({ marca: marcaFiltro, tamanho: tamanhoFiltro, referencia: referenciaFiltro }, page)}
+        />
       </div>
     </div>
   );
 }
+
