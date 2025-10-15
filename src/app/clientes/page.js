@@ -179,12 +179,9 @@ export default function Clientes() {
           )}
         </div>
 
-        <div className="mt-6 flex justify-center">
-          <Link
-            href="/"
-            className="inline-flex items-center justify-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-poppins text-sm font-medium"
-          >
-            Voltar ao Estoque
+        <div className="mt-8 flex justify-center">
+          <Link href="/" className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium font-poppins rounded-md hover:bg-blue-700 transition-colors duration-200 shadow-md">
+            Voltar a Home
           </Link>
         </div>
 

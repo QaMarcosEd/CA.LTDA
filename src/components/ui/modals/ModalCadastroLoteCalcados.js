@@ -210,10 +210,10 @@ return (
                 className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 font-poppins text-sm"
               >
                 <option value="">Selecione o Gênero</option>
-                <option value="MASCULINO">Masculino</option>
-                <option value="FEMININO">Feminino</option>
-                <option value="INFANTIL_MASCULINO">Infantil Masculino</option>
-                <option value="INFANTIL_FEMININO">Infantil Feminino</option>
+                <option value="Masculino">Masculino</option>
+                <option value="Feminino">Feminino</option>
+                <option value="Infantil Masculino">Infantil Masculino</option>
+                <option value="IInfantil Feminino">Infantil Feminino</option>
               </select>
               <label className="absolute left-4 -top-2 text-xs bg-white px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-blue-500">
                 Gênero <span className="text-red-500 ml-1">*</span>
@@ -221,26 +221,78 @@ return (
             </div>
 
             <div className="relative">
-              <input
+              <select
                 name="modelo"
                 value={genericos.modelo}
                 onChange={handleGenericosChange}
-                placeholder=" "
-                className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-transparent font-poppins text-sm"
-              />
+                className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 font-poppins text-sm"
+              >
+                <option value="">Selecione o Modelo</option>
+                <option value="Scarpin">Scarpin</option>
+                <option value="Anabela">Anabela</option>
+                <option value="Rasteirinha">Rasteirinha</option>
+                <option value="Bota">Bota</option>
+                <option value="Coturno">Coturno</option>
+                <option value="Mule">Mule</option>
+                <option value="Tamanco">Tamanco</option>
+                <option value="Sapatilha">Sapatilha</option>
+                <option value="Sandália">Sandália</option>
+                <option value="Chinelo">Chinelo</option>
+                <option value="Sapato">Sapato</option>
+                <option value="Sapatênis">Sapatênis</option>
+                <option value="Slide">Slide</option>
+                <option value="Tênis casual">Tênis casual</option>
+                <option value="Tênis esportivo">Tênis esportivo</option>
+                <option value="Botina">Botina</option>
+                <option value="Crocs">Crocs</option>
+                <option value="Papete">Papete</option>
+                <option value="Chuteira de campo">Chuteira de campo</option>
+                <option value="Chuteira society">Chuteira society</option>
+                <option value="Chuteira de futsal">Chuteira de futsal</option>
+              </select>              
               <label className="absolute left-4 -top-2 text-xs bg-white px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-blue-500">
                 Modelo <span className="text-red-500 ml-1">*</span>
               </label>
             </div>
 
             <div className="relative">
-              <input
+              <select
                 name="marca"
                 value={genericos.marca}
                 onChange={handleGenericosChange}
-                placeholder=" "
-                className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-transparent font-poppins text-sm"
-              />
+                className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 font-poppins text-sm"
+              >
+                <option value="">Selecione a Marca</option>
+                <option value="Beira Rio">Beira Rio</option>
+                <option value="Moleca">Moleca</option>
+                <option value="Vizzano">Vizzano</option>
+                <option value="Dakota">Dakota</option>
+                <option value="Via Marte">Via Marte</option>
+                <option value="Mississipi">Mississipi</option>
+                <option value="Modare">Modare</option>
+                <option value="Usaflex">Usaflex</option>
+                <option value="Ramarim">Ramarim</option>
+                <option value="Piccadilly">Piccadilly</option>
+                <option value="Kolosh">Kolosh</option>
+                <option value="Olympikus">Olympikus</option>
+                <option value="Mizuno">Mizuno</option>
+                <option value="Nike">Nike</option>
+                <option value="Adidas">Adidas</option>
+                <option value="Fila">Fila</option>
+                <option value="Pegada">Pegada</option>
+                <option value="Ferracini">Ferracini</option>
+                <option value="Democrata">Democrata</option>
+                <option value="Klin">Klin</option>
+                <option value="Grendene">Grendene</option>
+                <option value="Rider">Rider</option>
+                <option value="Cartago">Cartago</option>
+                <option value="Mathaus">Mathaus</option>
+                <option value="Dalponte">Dalponte</option>
+                <option value="Carreiro">Carreiro</option>
+                <option value="D&#39;Plaka">D'Plaka</option>
+                <option value="Euro">Euro</option>
+                <option value="Mercurial">Mercurial</option>
+              </select>
               <label className="absolute left-4 -top-2 text-xs bg-white px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-blue-500">
                 Marca <span className="text-red-500 ml-1">*</span>
               </label>

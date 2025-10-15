@@ -1,6 +1,9 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import CustomToaster from "@/components/ui/CustomToaster"; // importa o custom
+import CustomToaster from "@/components/ui/CustomToaster";
+import Sidebar from "../components/SideBar";
+import { SidebarProvider } from "@/components/SidebarContext";
+import MainContent from "@/components/MainContent";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,10 +25,15 @@ export default function RootLayout({ children }) {
     <html lang="pt-BR">
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}
       >
-        {children}
-        <CustomToaster /> {/* só ele, nada de Toaster direto */}
+        <SidebarProvider>
+          <div className="flex h-screen overflow-hidden">
+            <Sidebar />
+            <MainContent>{children}</MainContent>
+          </div>
+        </SidebarProvider>
+        <CustomToaster />
       </body>
     </html>
   );
