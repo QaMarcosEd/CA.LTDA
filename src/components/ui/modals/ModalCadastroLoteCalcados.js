@@ -265,6 +265,8 @@ return (
                 <option value="">Selecione a Marca</option>
                 <option value="Beira Rio">Beira Rio</option>
                 <option value="Moleca">Moleca</option>
+                <option value="Constance">Constance</option>
+                <option value="Via Scarpa">Via Scarpa</option>
                 <option value="Vizzano">Vizzano</option>
                 <option value="Dakota">Dakota</option>
                 <option value="Via Marte">Via Marte</option>
@@ -292,6 +294,8 @@ return (
                 <option value="D&#39;Plaka">D'Plaka</option>
                 <option value="Euro">Euro</option>
                 <option value="Mercurial">Mercurial</option>
+                <option value="Molekinha">Molekinha</option>
+                <option value="Molekinho">Molekinho</option>
               </select>
               <label className="absolute left-4 -top-2 text-xs bg-white px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-blue-500">
                 Marca <span className="text-red-500 ml-1">*</span>
