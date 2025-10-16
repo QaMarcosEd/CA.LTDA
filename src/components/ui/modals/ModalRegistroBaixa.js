@@ -24,6 +24,10 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit,
   const [taxa, setTaxa] = useState(0);
   const [valorLiquido, setValorLiquido] = useState(0);
   const [formaPagamentoEntrada, setFormaPagamentoEntrada] = useState('DINHEIRO');
+  const [dataAniversario, setDataAniversario] = useState('');
+  const [cidade, setCidade] = useState('');
+  const [bairro, setBairro] = useState('');
+  const [rua, setRua] = useState('');
 
   useEffect(() => {
     if (produto) {
@@ -38,7 +42,7 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit,
         .then((data) => setClientes(data))
         .catch((error) => {
           console.error('Erro ao carregar clientes:', error);
-          toast.error('Erro ao carregar clientes ❌');
+          toast.error('Erro ao carregar clientes');
         });
       fetch('/api/taxas-cartao', { cache: 'no-store' })
         .then((res) => {
@@ -48,7 +52,7 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit,
         .then((data) => setTaxasCartao(data))
         .catch((error) => {
           console.error('Erro ao carregar taxas:', error);
-          toast.error('Erro ao carregar taxas de cartão ❌');
+          toast.error('Erro ao carregar taxas de cartão');
         });
     }
   }, [produto, isOpen]);
@@ -176,7 +180,15 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit,
         const res = await fetch('/api/clientes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nome: clienteNome, apelido, telefone }),
+          body: JSON.stringify({ 
+            nome: clienteNome, 
+            apelido, 
+            telefone,
+            dataAniversario: dataAniversario || null,  // Novo: envia data aniversário
+            cidade: cidade || null,  // Novo: envia cidade
+            bairro: bairro || null,  // Novo: envia bairro
+            rua: rua || null         // Novo: envia rua
+          }),
         });
         if (!res.ok) {
           const errorData = await res.json();
@@ -234,8 +246,11 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit,
       setTaxa(0);
       setValorLiquido(0);
       setFormaPagamentoEntrada('DINHEIRO');
-      toast.success('Venda registrada com sucesso! ✅');
-      // NOVO: Refetch clientes no pai se callback existir
+      setDataAniversario('');  // Reset novo
+      setCidade('');           // Reset novo
+      setBairro('');           // Reset novo
+      setRua('');              // Reset novo
+      toast.success('Venda registrada com sucesso!');
       if (typeof onSubmitRefresh === 'function') {
         onSubmitRefresh();
       }
@@ -254,11 +269,11 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit,
         {/* Header estilizado com emoji */}
         <div className="p-6 bg-gradient-to-r from-green-500 to-green-600 text-white flex items-center justify-between rounded-t-2xl">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">🛒</span>
+            <span className="text-2xl">Cart</span>
             <h2 className="text-2xl font-bold font-poppins">Registrar Venda - {produto.nome}</h2>
           </div>
           <button onClick={onClose} aria-label="Fechar modal" className="text-white hover:text-gray-200 transition text-2xl">
-            ❌
+            X
           </button>
         </div>
 
@@ -338,6 +353,61 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit,
                       (11) 99999-9999
                     </label>
                   </div>
+
+                  {/* Novo: Data de Aniversário */}
+                  <div className="relative">
+                    <input
+                      type="date"
+                      value={dataAniversario}
+                      onChange={(e) => setDataAniversario(e.target.value)}
+                      placeholder=" "
+                      className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder-transparent font-poppins text-sm"
+                    />
+                    <label className="absolute left-4 -top-2 text-xs bg-gray-50 px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+                      Data de Aniversário (opcional)
+                    </label>
+                  </div>
+
+                  {/* Novo: Campos de Endereço (agrupados) */}
+                  <div className="bg-white p-4 rounded-lg shadow-inner border border-gray-200 space-y-4">
+                    <p className="text-sm font-poppins text-gray-700 font-medium">Endereço (opcional)</p>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={cidade}
+                        onChange={(e) => setCidade(e.target.value)}
+                        placeholder=" "
+                        className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder-transparent font-poppins text-sm"
+                      />
+                      <label className="absolute left-4 -top-2 text-xs bg-white px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+                        Cidade
+                      </label>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={bairro}
+                        onChange={(e) => setBairro(e.target.value)}
+                        placeholder=" "
+                        className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder-transparent font-poppins text-sm"
+                      />
+                      <label className="absolute left-4 -top-2 text-xs bg-white px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+                        Bairro
+                      </label>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={rua}
+                        onChange={(e) => setRua(e.target.value)}
+                        placeholder=" "
+                        className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder-transparent font-poppins text-sm"
+                      />
+                      <label className="absolute left-4 -top-2 text-xs bg-white px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+                        Rua/Endereço
+                      </label>
+                    </div>
+                  </div>
                 </div>
               )}
               <label className="absolute left-4 -top-2 text-xs bg-gray-50 px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
@@ -352,6 +422,10 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit,
                   setClienteNome('');
                   setApelido('');
                   setTelefone('');
+                  setDataAniversario('');  // Limpa novo
+                  setCidade('');           // Limpa novo
+                  setBairro('');           // Limpa novo
+                  setRua('');              // Limpa novo
                 }
               }}
               className="text-green-600 hover:text-green-800 font-poppins text-sm font-medium transition"
@@ -420,7 +494,7 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit,
                       <option key={band} value={band}>{band}</option>
                     ))}
                   </select>
-                  <label className="absolute left-4 -top-2 text-xs bg-gray-50 px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+                  <label className="absolute left-4 -top-2 text-xs bg-white px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
                     Bandeira <span className="text-red-500 ml-1">*</span>
                   </label>
                 </div>
@@ -454,7 +528,7 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit,
                           </option>
                         ))}
                     </select>
-                    <label className="absolute left-4 -top-2 text-xs bg-gray-50 px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+                    <label className="absolute left-4 -top-2 text-xs bg-white px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
                       Modalidade <span className="text-red-500 ml-1">*</span>
                     </label>
                   </div>
@@ -509,7 +583,7 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit,
                         <option key={i + 1} value={String(i + 1)}>{i + 1}</option>
                       ))}
                     </select>
-                    <label className="absolute left-4 -top-2 text-xs bg-gray-50 px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+                    <label className="absolute left-4 -top-2 text-xs bg-white px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
                       Número de Parcelas <span className="text-red-500 ml-1">*</span>
                     </label>
                   </div>
@@ -522,7 +596,7 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit,
                       placeholder=" "
                       className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder-transparent font-poppins text-sm"
                     />
-                    <label className="absolute left-4 -top-2 text-xs bg-gray-50 px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+                    <label className="absolute left-4 -top-2 text-xs bg-white px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
                       Entrada (R$)
                     </label>
                   </div>
@@ -536,7 +610,7 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit,
                         <option value="DINHEIRO">Dinheiro</option>
                         <option value="PIX">Pix</option>
                       </select>
-                      <label className="absolute left-4 -top-2 text-xs bg-gray-50 px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+                      <label className="absolute left-4 -top-2 text-xs bg-white px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
                         Forma de Pagamento da Entrada
                       </label>
                       <p className="text-xs font-poppins text-gray-500 mt-3">Entrada deve ser paga em PIX ou Dinheiro</p>
@@ -558,19 +632,17 @@ export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit,
             aria-label="Cancelar venda"
             className="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-400 transition-all duration-200 flex items-center justify-center gap-2 shadow-md text-sm md:text-base font-poppins"
           >
-            ❌ Cancelar
+            Cancelar
           </button>
           <button
             onClick={handleConfirm}
             aria-label="Confirmar venda"
             className="flex-1 bg-green-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-600 transition-all duration-200 flex items-center justify-center gap-2 shadow-md text-sm md:text-base font-poppins"
           >
-            ✅ Confirmar
+            Confirmar
           </button>
         </div>
       </div>
     </div>
   );
 }
-
-

@@ -33,6 +33,10 @@ model Cliente {
   nome         String   @unique
   apelido      String?
   telefone     String?
+  dataNascimento DateTime?
+  cidade       String?    // Novo: cidade (ex: "São Paulo")
+  bairro       String?    // Novo: bairro (ex: "Centro")
+  rua          String?    // Novo: rua (ex: "Av. Paulista, 123")
   ultimaCompra     DateTime? // Novo: data da última compra (opcional)
   frequenciaCompras Int?     // Novo: número total de compras (opcional)
   vendas       Venda[]

@@ -46,6 +46,10 @@ export async function GET() {
         nome: cliente.nome,
         apelido: cliente.apelido,
         telefone: cliente.telefone,
+        dataNascimento: cliente.dataNascimento,
+        cidade: cliente.cidade,  // Novo
+        bairro: cliente.bairro,  // Novo
+        rua: cliente.rua,        // Novo
         criadoEm: cliente.criadoEm,
         ultimaCompra: cliente.ultimaCompra, // Se usar o campo do model
         _count: cliente._count,
@@ -72,7 +76,7 @@ export async function GET() {
 
 export async function POST(request) {
   try {
-    const { nome, apelido, telefone } = await request.json();
+    const { nome, apelido, telefone, dataNascimento, cidade, bairro, rua } = await request.json();
     if (!nome) {
       return new Response(JSON.stringify({ error: 'Nome é obrigatório' }), {
         status: 400,
@@ -85,6 +89,10 @@ export async function POST(request) {
         nome,
         apelido: apelido || null,
         telefone: telefone || null,
+        dataNascimento: dataNascimento ? new Date(dataNascimento) : null,
+        cidade: cidade || null,  // Novo: salva ou null
+        bairro: bairro || null,  // Novo
+        rua: rua || null,        // Novo
         ultimaCompra: new Date(), // NOVO: Seta default pra cliente novo que compra
       },
     });

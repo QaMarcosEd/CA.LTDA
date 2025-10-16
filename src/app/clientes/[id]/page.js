@@ -1,16 +1,38 @@
-// // app/clientes/[id]/page.js
+// app/clientes/[id]/page.js
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { formatDateToBrazil } from '../../../../utils/formatDate';
+import { formatPhoneNumber } from '../../../../utils/formatPhoneNumber';
+import toast from 'react-hot-toast';
+
+// Helper pra converter ISO date pra 'yyyy-MM-dd' pro input date
+const formatDateForInput = (isoDate) => {
+  if (!isoDate) return '';
+  const date = new Date(isoDate);
+  return date.toISOString().split('T')[0];  // yyyy-MM-dd
+};
 
 export default function DetalhesCliente() {
   const params = useParams();
   const [cliente, setCliente] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+
+  // States pra edição
+  const [editNome, setEditNome] = useState('');
+  const [editApelido, setEditApelido] = useState('');
+  const [editTelefone, setEditTelefone] = useState('');
+  const [editDataNascimento, setEditDataNascimento] = useState('');
+  const [editCidade, setEditCidade] = useState('');
+  const [editBairro, setEditBairro] = useState('');
+  const [editRua, setEditRua] = useState('');
+
+  // Armazena valores originais pra reset seguro
+  const [originalValues, setOriginalValues] = useState({});
 
   useEffect(() => {
     if (params.id) {
@@ -28,12 +50,116 @@ export default function DetalhesCliente() {
       const data = await res.json();
       console.log('Cliente retornado:', data);
       setCliente(data);
+
+      // Inicializa originalValues e states de edição
+      const orig = {
+        nome: data.nome || '',
+        apelido: data.apelido || '',
+        telefone: data.telefone || '',
+        dataNascimento: formatDateForInput(data.dataNascimento),
+        cidade: data.cidade || '',
+        bairro: data.bairro || '',
+        rua: data.rua || '',
+      };
+      setOriginalValues(orig);
+      setEditNome(orig.nome);
+      setEditApelido(orig.apelido);
+      setEditTelefone(orig.telefone);
+      setEditDataNascimento(orig.dataNascimento);
+      setEditCidade(orig.cidade);
+      setEditBairro(orig.bairro);
+      setEditRua(orig.rua);
     } catch (error) {
       console.error('Erro ao carregar detalhes:', error);
       setError(`Erro ao carregar detalhes do cliente: ${error.message}`);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSave = async () => {
+  const trimmedNome = editNome.trim();
+  if (!trimmedNome) {
+    toast.error('Nome é obrigatório');
+    return;
+  }
+  const trimmedTelefone = editTelefone.trim();
+  if (trimmedTelefone && !trimmedTelefone.match(/\(\d{2}\) \d{5}-\d{4}/)) {
+    toast.error('Telefone inválido (use formato (XX) XXXXX-XXXX)');
+    return;
+  }
+  if (editDataNascimento && isNaN(new Date(editDataNascimento).getTime())) {
+    toast.error('Data de nascimento inválida');
+    return;
+  }
+
+  const bodyToSend = {
+    nome: trimmedNome,
+  };
+  const trimmedApelido = editApelido.trim();
+  if (trimmedApelido) bodyToSend.apelido = trimmedApelido;
+  if (trimmedTelefone) bodyToSend.telefone = trimmedTelefone;
+  // Case exato do schema
+  if (editDataNascimento) bodyToSend.dataNascimento = editDataNascimento;
+  else bodyToSend.dataNascimento = null;
+  const trimmedCidade = editCidade.trim();
+  if (trimmedCidade) bodyToSend.cidade = trimmedCidade;
+  const trimmedBairro = editBairro.trim();
+  if (trimmedBairro) bodyToSend.bairro = trimmedBairro;
+  const trimmedRua = editRua.trim();
+  if (trimmedRua) bodyToSend.rua = trimmedRua;
+
+  console.log('[Frontend Detalhes] Body enviado para PUT:', bodyToSend);
+
+  try {
+    const res = await fetch(`/api/clientes/${params.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bodyToSend),
+    });
+
+    const responseBody = await res.json();
+    console.log('[Frontend Resposta API] Status:', res.status, '| Body:', responseBody);
+
+    if (!res.ok) {
+      console.error('[Frontend Erro API]:', responseBody);
+      throw new Error(responseBody.error || responseBody.details || `Erro HTTP ${res.status}: Falha ao atualizar`);
+    }
+
+    // Sucesso: Não setCliente(responseBody) aqui – response não tem metricas!
+    // Em vez disso: Atualize só os campos editáveis manualmente (merge)
+    setCliente(prev => ({
+      ...prev,  // Mantém metricas, vendas, etc.
+      nome: responseBody.nome || prev.nome,
+      apelido: responseBody.apelido ?? prev.apelido,
+      telefone: responseBody.telefone ?? prev.telefone,
+      dataNascimento: responseBody.dataNascimento ?? prev.dataNascimento,
+      cidade: responseBody.cidade ?? prev.cidade,
+      bairro: responseBody.bairro ?? prev.bairro,
+      rua: responseBody.rua ?? prev.rua,
+    }));
+
+    // Ou, mais simples: Refaça o fetch completo (recarrega métricas frescas do GET)
+    // await fetchDetalhes();
+
+    toast.success('Cliente atualizado com sucesso! ✅');
+    setIsEditing(false);
+  } catch (error) {
+    console.error('Erro ao salvar no frontend:', error);
+    toast.error(error.message || 'Erro ao atualizar cliente ❌');
+  }
+};
+
+  const handleCancel = () => {
+    setEditNome(originalValues.nome);
+    setEditApelido(originalValues.apelido);
+    setEditTelefone(originalValues.telefone);
+    setEditDataNascimento(originalValues.dataNascimento);
+    setEditCidade(originalValues.cidade);
+    setEditBairro(originalValues.bairro);
+    setEditRua(originalValues.rua);
+    setIsEditing(false);
+    toast.info('Edição cancelada');
   };
 
   const getValorPago = (venda) => {
@@ -95,15 +221,124 @@ export default function DetalhesCliente() {
           </div>
         </div>
 
-        {/* Informações do Cliente */}
+        {/* Informações do Cliente - Com edição */}
         <div className="bg-white p-6 rounded-xl shadow-md mb-8 text-gray-600">
-          <h2 className="text-xl font-semibold font-poppins text-gray-900 mb-4">Informações do Cliente</h2>
-          <p><strong>Nome:</strong> {cliente.nome}</p>
-          <p><strong>Apelido:</strong> {cliente.apelido || 'N/A'}</p>
-          <p><strong>Telefone:</strong> {cliente.telefone || 'N/A'}</p>
-          <p><strong>Última Compra:</strong> {cliente.ultimaCompra ? formatDateToBrazil(cliente.ultimaCompra) : 'N/A'}</p>
-          <p><strong>Frequência de Compras:</strong> {cliente.frequenciaCompras || 'N/A'}</p>
-          <p><strong>Criado em:</strong> {formatDateToBrazil(cliente.criadoEm)}</p>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold font-poppins text-gray-900">Informações do Cliente</h2>
+            {!isEditing ? (
+              <button onClick={() => setIsEditing(true)} className="text-green-600 hover:text-green-800 font-poppins text-sm font-medium transition">
+                Editar
+              </button>
+            ) : (
+              <div className="flex gap-2">
+                <button onClick={handleSave} className="text-green-600 hover:text-green-800 font-poppins text-sm font-medium transition">Salvar</button>
+                <button onClick={handleCancel} className="text-red-600 hover:text-red-800 font-poppins text-sm font-medium transition">Cancelar</button>
+              </div>
+            )}
+          </div>
+          {!isEditing ? (
+            <>
+              <p><strong>Nome:</strong> {cliente.nome}</p>
+              <p><strong>Apelido:</strong> {cliente.apelido || 'N/A'}</p>
+              <p><strong>Telefone:</strong> {cliente.telefone || 'N/A'}</p>
+              <p><strong>Data de Nascimento:</strong> {cliente.dataNascimento ? formatDateToBrazil(cliente.dataNascimento) : 'N/A'}</p>
+              <p><strong>Cidade:</strong> {cliente.cidade || 'N/A'}</p>
+              <p><strong>Bairro:</strong> {cliente.bairro || 'N/A'}</p>
+              <p><strong>Rua:</strong> {cliente.rua || 'N/A'}</p>
+              <p><strong>Última Compra:</strong> {cliente.ultimaCompra ? formatDateToBrazil(cliente.ultimaCompra) : 'N/A'}</p>
+              <p><strong>Frequência de Compras:</strong> {cliente.frequenciaCompras || 'N/A'}</p>
+              <p><strong>Criado em:</strong> {formatDateToBrazil(cliente.criadoEm)}</p>
+            </>
+          ) : (
+            <div className="space-y-4">
+              {/* Input para Nome (obrigatório) */}
+              <div className="relative">
+                <input
+                  type="text"
+                  value={editNome}
+                  onChange={(e) => setEditNome(e.target.value)}
+                  placeholder=" "
+                  className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder-transparent font-poppins text-sm"
+                  required
+                />
+                <label className="absolute left-4 -top-2 text-xs bg-white px-1 text-red-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+                  Nome (obrigatório)
+                </label>
+              </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={editApelido}
+                  onChange={(e) => setEditApelido(e.target.value)}
+                  placeholder=" "
+                  className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder-transparent font-poppins text-sm"
+                />
+                <label className="absolute left-4 -top-2 text-xs bg-white px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+                  Apelido (opcional)
+                </label>
+              </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={editTelefone}
+                  onChange={(e) => setEditTelefone(formatPhoneNumber(e.target.value))}
+                  placeholder=" "
+                  className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder-transparent font-poppins text-sm"
+                />
+                <label className="absolute left-4 -top-2 text-xs bg-white px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+                  Telefone (opcional)
+                </label>
+              </div>
+              <div className="relative">
+                <input
+                  type="date"
+                  value={editDataNascimento}
+                  onChange={(e) => setEditDataNascimento(e.target.value)}
+                  placeholder=" "
+                  className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder-transparent font-poppins text-sm"
+                />
+                <label className="absolute left-4 -top-2 text-xs bg-white px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+                  Data de Nascimento (opcional)
+                </label>
+              </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={editCidade}
+                  onChange={(e) => setEditCidade(e.target.value)}
+                  placeholder=" "
+                  className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder-transparent font-poppins text-sm"
+                />
+                <label className="absolute left-4 -top-2 text-xs bg-white px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+                  Cidade (opcional)
+                </label>
+              </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={editBairro}
+                  onChange={(e) => setEditBairro(e.target.value)}
+                  placeholder=" "
+                  className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder-transparent font-poppins text-sm"
+                />
+                <label className="absolute left-4 -top-2 text-xs bg-white px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+                  Bairro (opcional)
+                </label>
+              </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={editRua}
+                  onChange={(e) => setEditRua(e.target.value)}
+                  placeholder=" "
+                  className="peer w-full px-4 py-3 pt-5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder-transparent font-poppins text-sm"
+                />
+                <label className="absolute left-4 -top-2 text-xs bg-white px-1 text-gray-500 pointer-events-none transition-all duration-200 peer-focus:text-green-500">
+                  Rua/Endereço (opcional)
+                </label>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Tabela de Vendas */}
@@ -165,4 +400,3 @@ export default function DetalhesCliente() {
     </div>
   );
 }
-

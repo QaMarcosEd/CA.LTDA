@@ -4,6 +4,10 @@ CREATE TABLE "Cliente" (
     "nome" TEXT NOT NULL,
     "apelido" TEXT,
     "telefone" TEXT,
+    "dataNascimento" DATETIME,
+    "cidade" TEXT,
+    "bairro" TEXT,
+    "rua" TEXT,
     "ultimaCompra" DATETIME,
     "frequenciaCompras" INTEGER,
     "criadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
