@@ -3,16 +3,14 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
-import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Search, Package, AlertTriangle, DollarSign, Box, TrendingUp } from 'lucide-react';
-import ModalCadastroLoteCalçados from '@/components/ui/modals/ModalCadastroLoteCalcados';
 
 const formatCurrency = (value) => {
   const num = parseFloat(value) || 0;
   return `R$ ${num.toFixed(2).replace('.', ',')}`;
 };
 
-export default function DashboardPage() {
+export default function Home() {
   const [totalPares, setTotalPares] = useState(0);
   const [valorTotal, setValorTotal] = useState(0);
   const [dashboardData, setDashboardData] = useState({
@@ -20,19 +18,10 @@ export default function DashboardPage() {
     lotesHoje: 0,
     modelosAtivos: 0,
     alerts: [],
-    estoquePorGenero: [],
-    topModelos: [],
   });
   const [rankingVendidos, setRankingVendidos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [epoca, setEpoca] = useState('normal'); // Novo estado para época
-  const [loteModalOpen, setLoteModalOpen] = useState(false);
-
-  const refreshDashboard = async () => {
-    await fetchTotaisEOutros();
-    await fetchRankingVendidos();
-  };
+  const [epoca, setEpoca] = useState('normal');
 
   const fetchTotaisEOutros = async () => {
     setLoading(true);
@@ -58,8 +47,6 @@ export default function DashboardPage() {
           lotesHoje: 0,
           modelosAtivos: 0,
           alerts: [],
-          estoquePorGenero: [],
-          topModelos: [],
         });
         return;
       }
@@ -69,8 +56,6 @@ export default function DashboardPage() {
         lotesHoje: homeData.lotesHoje || 0,
         modelosAtivos: homeData.modelosAtivos || 0,
         alerts: homeData.alerts || [],
-        estoquePorGenero: homeData.estoquePorGenero || [],
-        topModelos: homeData.topModelos || [],
       });
     } catch (err) {
       console.error('Erro geral:', err);
@@ -80,8 +65,6 @@ export default function DashboardPage() {
         lotesHoje: 0,
         modelosAtivos: 0,
         alerts: [],
-        estoquePorGenero: [],
-        topModelos: [],
       });
     } finally {
       setLoading(false);
@@ -104,30 +87,6 @@ export default function DashboardPage() {
     fetchTotaisEOutros();
     fetchRankingVendidos();
   }, [epoca]);
-
-  const handleSubmitLote = async (data) => {
-    try {
-      const response = await fetch('/api/produtos/lote', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      const result = await response.json();
-      if (response.status === 201) {
-        toast.success('Lote adicionado com sucesso!');
-        setLoteModalOpen(false);
-        await refreshDashboard();
-      } else {
-        toast.error(result.error || 'Erro ao adicionar lote');
-      }
-      return { status: response.status, data: result };
-    } catch (error) {
-      toast.error('Erro inesperado');
-      console.error(error);
-    }
-  };
-
-  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444'];
 
   if (loading) {
     return (
@@ -222,43 +181,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200">
-          <h3 className="text-lg font-semibold font-poppins text-gray-700 mb-4">Estoque por Gênero</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={dashboardData.estoquePorGenero}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {dashboardData.estoquePorGenero.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200">
-          <h3 className="text-lg font-semibold font-poppins text-gray-700 mb-4">Top 5 Modelos em Estoque</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={dashboardData.topModelos}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="quantidade" fill="#3B82F6" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
       <div className="bg-white rounded-xl p-5 shadow-md border border-gray-200 mb-8">
         <h3 className="text-lg font-semibold font-poppins text-gray-700 mb-4">Ranking de Modelos Mais Vendidos (Geral)</h3>
         {rankingVendidos.length > 0 ? (
@@ -284,24 +206,6 @@ export default function DashboardPage() {
           <p className="text-sm text-gray-500 font-poppins">Nenhum dado de vendas disponível.</p>
         )}
       </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <button
-          onClick={() => setLoteModalOpen(true)}
-          className="bg-blue-600 text-white px-6 py-4 rounded-xl font-medium hover:bg-blue-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-md font-poppins text-sm md:text-base"
-        >
-          <span className="text-xl">➕</span> Adicionar Lote
-        </button>
-        <button className="bg-purple-600 text-white px-6 py-4 rounded-xl font-medium hover:bg-purple-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-md font-poppins text-sm md:text-base">
-          <span className="text-xl">📄</span> Gerar Relatório
-        </button>
-      </div>
-
-      <ModalCadastroLoteCalçados
-        isOpen={loteModalOpen}
-        onClose={() => setLoteModalOpen(false)}
-        onSubmit={handleSubmitLote}
-      />
     </div>
   );
 }

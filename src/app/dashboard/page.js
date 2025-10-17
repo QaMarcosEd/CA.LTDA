@@ -2,58 +2,41 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Pie } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
-import ChartDataLabels from 'chartjs-plugin-datalabels';
-
-ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels);
+import { format } from 'date-fns';
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Search, Package, AlertTriangle, DollarSign, Box, TrendingUp } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function Dashboard() {
-  const [contagemPorGenero, setContagemPorGenero] = useState([]);
-  const [contagemPorModelo, setContagemPorModelo] = useState([]);
-  const [contagemPorMarca, setContagemPorMarca] = useState([]);
-  const [generosDisponiveis, setGenerosDisponiveis] = useState([]);
-  const [modelosDisponiveis, setModelosDisponiveis] = useState([]);
   const [produtos, setProdutos] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalProdutos, setTotalProdutos] = useState(0);
-
-  const [referenciaFiltro, setReferenciaFiltro] = useState('');
-  
-  // Estados atualizados pros novos campos financeiros
   const [valorTotalRevenda, setValorTotalRevenda] = useState(0);
   const [custoTotalEstoque, setCustoTotalEstoque] = useState(0);
   const [lucroProjetado, setLucroProjetado] = useState(0);
   const [margemLucro, setMargemLucro] = useState('0%');
-  
   const [resumoVendas, setResumoVendas] = useState({ totalQuitado: 0, totalPendente: 0 });
+  const [dashboardData, setDashboardData] = useState({
+    lowStockCount: 0,
+    lotesHoje: 0,
+    modelosAtivos: 0,
+    alerts: [],
+    estoquePorGenero: [],
+    topModelos: [],
+  });
+  const [rankingVendidos, setRankingVendidos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const [marcaFiltro, setMarcaFiltro] = useState('');
-  const [modeloFiltro, setModeloFiltro] = useState('');
-  const [generoFiltro, setGeneroFiltro] = useState('');
-  const [tamanhoFiltro, setTamanhoFiltro] = useState('');
+  const [epoca, setEpoca] = useState('normal');
 
   const limit = 10;
 
-  // Busca contagem para os gráficos (sem mudanças)
-  const fetchContagem = async (tipo) => {
-    try {
-      const res = await fetch(`/api/produtos?tipo=${tipo}`);
-      if (!res.ok) {
-        console.error(`Erro no endpoint /api/produtos?tipo=${tipo}: ${res.statusText}`);
-        return [];
-      }
-      return await res.json();
-    } catch (err) {
-      console.error(err);
-      return [];
-    }
+  const formatCurrency = (value) => {
+    const num = parseFloat(value) || 0;
+    return `R$ ${num.toFixed(2).replace('.', ',')}`;
   };
 
-  // Busca resumo de vendas (sem mudanças)
   const fetchResumoVendas = async () => {
     try {
       const res = await fetch('/api/vendas?resumo=true');
@@ -65,52 +48,23 @@ export default function Dashboard() {
     }
   };
 
-  // Busca listas dinâmicas para selects (sem mudanças)
-  const fetchListasFiltros = async () => {
-    try {
-      const [generosRes, modelosRes] = await Promise.all([
-        fetch('/api/produtos?tipo=genero'),
-        fetch('/api/produtos?tipo=modelo'),
-      ]);
-      if (!generosRes.ok || !modelosRes.ok) {
-        console.error('Erro ao buscar listas de filtros');
-        return;
-      }
-      const generos = await generosRes.json();
-      const modelos = await modelosRes.json();
-      setGenerosDisponiveis(generos.map(item => item.genero));
-      setModelosDisponiveis(modelos.map(item => item.modelo));
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-// Busca produtos - ATUALIZADO pra incluir referencia
   const fetchProdutos = async (pg = 1) => {
     setLoading(true);
     setError(null);
-
     try {
       const query = new URLSearchParams();
-      if (marcaFiltro) query.append('marca', marcaFiltro);
-      if (modeloFiltro) query.append('modelo', modeloFiltro);
-      if (generoFiltro) query.append('genero', generoFiltro);
-      if (tamanhoFiltro) query.append('tamanho', tamanhoFiltro);
-      if (referenciaFiltro) query.append('referencia', referenciaFiltro); // Novo: passa referencia
       query.append('page', pg);
       query.append('limit', limit);
 
       const res = await fetch(`/api/produtos?${query.toString()}`);
       if (!res.ok) throw new Error('Erro ao buscar produtos');
-
       const data = await res.json();
       setProdutos(data.data || []);
-      setTotalPages(Math.ceil(data.totalProdutos / limit) || 1);
+      setTotalPages(data.totalPages || 1);
       setTotalProdutos(data.totalProdutos || 0);
-      
-      setValorTotalRevenda(data.valorTotalRevenda || 0);
-      setCustoTotalEstoque(data.custoTotalEstoque || 0);
-      setLucroProjetado(data.lucroProjetado || 0);
+      setValorTotalRevenda(parseFloat(data.valorTotalRevenda) || 0);
+      setCustoTotalEstoque(parseFloat(data.custoTotalEstoque) || 0);
+      setLucroProjetado(parseFloat(data.lucroProjetado) || 0);
       setMargemLucro(data.margemLucro || '0%');
     } catch (err) {
       console.error('Erro no fetchProdutos:', err);
@@ -121,42 +75,57 @@ export default function Dashboard() {
     }
   };
 
-  // Nova função pra limpar todos filtros
-  const limparFiltros = () => {
-    setMarcaFiltro('');
-    setModeloFiltro('');
-    setGeneroFiltro('');
-    setTamanhoFiltro('');
-    setReferenciaFiltro(''); // Limpa referencia
-    setPage(1);
-    fetchProdutos(1);
+  const fetchDashboardData = async () => {
+    try {
+      const url = epoca === 'pico' ? '/api/home?epoca=pico' : '/api/home';
+      const homeRes = await fetch(url);
+      if (!homeRes.ok) {
+        const errorText = await homeRes.text();
+        console.error('Erro ao buscar home:', homeRes.status, errorText);
+        throw new Error('Erro ao buscar dados do dashboard');
+      }
+      const homeData = await homeRes.json();
+      setDashboardData({
+        lowStockCount: homeData.lowStockCount || 0,
+        lotesHoje: homeData.lotesHoje || 0,
+        modelosAtivos: homeData.modelosAtivos || 0,
+        alerts: homeData.alerts || [],
+        estoquePorGenero: homeData.estoquePorGenero || [],
+        topModelos: homeData.topModelos || [],
+      });
+    } catch (err) {
+      console.error('Erro geral:', err);
+      toast.error('Erro ao carregar dados do dashboard');
+      setDashboardData({
+        lowStockCount: 0,
+        lotesHoje: 0,
+        modelosAtivos: 0,
+        alerts: [],
+        estoquePorGenero: [],
+        topModelos: [],
+      });
+    }
+  };
+
+  const fetchRankingVendidos = async () => {
+    try {
+      const res = await fetch('/api/vendas');
+      if (!res.ok) throw new Error('Erro ao buscar ranking');
+      const data = await res.json();
+      setRankingVendidos(data.rankingModelos || []);
+    } catch (err) {
+      console.error('Erro ao carregar ranking de vendas:', err);
+      toast.error('Erro ao carregar ranking de vendas');
+    }
   };
 
   useEffect(() => {
     const fetchData = async () => {
-      const [generoData, modeloData, marcaData] = await Promise.all([
-        fetchContagem('genero'),
-        fetchContagem('modelo'),
-        fetchContagem('marca'),
-      ]);
-      setContagemPorGenero(generoData);
-      setContagemPorModelo(modeloData);
-      setContagemPorMarca(marcaData);
-
-      await fetchProdutos(page);
-      await fetchListasFiltros();
-      await fetchResumoVendas();
+      await Promise.all([fetchProdutos(page), fetchResumoVendas(), fetchDashboardData(), fetchRankingVendidos()]);
     };
-
     fetchData();
-  }, [page]);
+  }, [page, epoca]);
 
-  const aplicarFiltro = () => {
-    setPage(1);
-    fetchProdutos(1);
-  };
-
-  // Função pra cor da margem (verde se boa, vermelho se ruim)
   const getMargemColor = (margemStr) => {
     const margemNum = parseFloat(margemStr.replace('%', ''));
     if (margemNum >= 50) return 'text-green-600';
@@ -164,53 +133,7 @@ export default function Dashboard() {
     return 'text-red-600';
   };
 
-  // Resto dos gráficos sem mudanças...
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: true,
-    plugins: {
-      legend: { display: false },
-      title: {
-        display: true,
-        text: 'Distribuição do Estoque',
-        font: { size: 16, family: 'Poppins' },
-        padding: { top: 10, bottom: 10 },
-      },
-      datalabels: {
-        formatter: (value, ctx) => {
-          const total = ctx.dataset.data.reduce((acc, val) => acc + val, 0);
-          const percentage = ((value / total) * 100).toFixed(1);
-          return percentage > 5 ? `${percentage}%` : '';
-        },
-        color: '#fff',
-        font: { size: 12, family: 'Poppins', weight: 'bold' },
-        textAlign: 'center',
-      },
-    },
-  };
-
-  const colors = [
-    'rgba(54,162,235,0.6)', 'rgba(255,99,132,0.6)', 'rgba(75,192,192,0.6)',
-    'rgba(255,205,86,0.6)', 'rgba(153,102,255,0.6)', 'rgba(255,159,64,0.6)',
-    'rgba(99,255,132,0.6)', 'rgba(201,203,207,0.6)', 'rgba(54,235,162,0.6)',
-    'rgba(255,99,235,0.6)', 'rgba(75,192,235,0.6)',
-  ];
-
-  const borderColors = colors.map(color => color.replace('0.6', '1'));
-
-  const agruparOutros = (data, labelKey, valueKey) => {
-    if (data.length > 10) {
-      const sorted = [...data].sort((a, b) => b[valueKey] - a[valueKey]);
-      const top10 = sorted.slice(0, 10);
-      const outrosTotal = sorted.slice(10).reduce((sum, item) => sum + item[valueKey], 0);
-      return [...top10, { [labelKey]: 'Outros', [valueKey]: outrosTotal }];
-    }
-    return data;
-  };
-
-  const contagemPorGeneroAgrupado = agruparOutros(contagemPorGenero, 'genero', 'total');
-  const contagemPorModeloAgrupado = agruparOutros(contagemPorModelo, 'modelo', 'total');
-  const contagemPorMarcaAgrupado = agruparOutros(contagemPorMarca, 'marca', 'total');
+  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444'];
 
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 space-y-4">
@@ -231,210 +154,209 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold font-poppins text-gray-900 mb-8 text-center">Dashboard de Estoque</h1>
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold font-poppins text-gray-800 mb-2 flex items-center gap-2">
+          <span className="text-3xl">Dashboard</span> Bom dia! Visão Geral do Estoque
+        </h2>
+        <p className="text-sm font-poppins text-gray-600">Atualizado em {format(new Date(), 'dd/MM/yyyy HH:mm')}</p>
+      </div>
 
-        {/* <div className="mb-6">
-          <Link
-            href="/"
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium font-poppins rounded-md hover:bg-blue-700 transition-colors duration-200"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-            </svg>
-            Voltar para Estoque
-          </Link>
-        </div> */}
+      {/* Toggle para época */}
+      <div className="mb-4 text-gray-500">
+        <label className="text-sm font-poppins text-gray-600 mr-2">Época:</label>
+        <select
+          value={epoca}
+          onChange={(e) => setEpoca(e.target.value)}
+          className="border border-gray-300 rounded-md p-2 font-poppins text-sm"
+        >
+          <option value="normal">Normal</option>
+          <option value="pico">Pico (ex.: verão, volta às aulas)</option>
+        </select>
+      </div>
 
-        {/* GRID EXPANDIDO PRA 6 CARDS FINANCEIROS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-          <div className="bg-white p-4 rounded-lg shadow-md">
-            <h3 className="text-sm font-poppins text-gray-600">Total Produtos</h3>
-            <p className="text-2xl font-bold font-poppins text-blue-600">{totalProdutos}</p>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg shadow-md">
-            <h3 className="text-sm font-poppins text-gray-600">Valor Potencial Revenda</h3>
-            <p className="text-2xl font-bold font-poppins text-green-600">R$ {valorTotalRevenda}</p>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg shadow-md">
-            <h3 className="text-sm font-poppins text-gray-600">Custo Total Estoque</h3>
-            <p className="text-2xl font-bold font-poppins text-orange-600">R$ {custoTotalEstoque}</p>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg shadow-md">
-            <h3 className="text-sm font-poppins text-gray-600">Lucro Projetado</h3>
-            <p className="text-2xl font-bold font-poppins text-purple-600">R$ {lucroProjetado}</p>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg shadow-md">
-            <h3 className="text-sm font-poppins text-gray-600">Margem Lucro</h3>
-            <p className={`text-2xl font-bold font-poppins ${getMargemColor(margemLucro)}`}>
-              {margemLucro}
-            </p>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg shadow-md">
-            <h3 className="text-sm font-poppins text-gray-600">Vendas Quitadas</h3>
-            <p className="text-2xl font-bold font-poppins text-indigo-600">R$ {resumoVendas.totalQuitado}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 mb-8">
+        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 flex items-center gap-4 hover:shadow-lg transition-shadow">
+          <div className="text-3xl">📦</div>
+          <div>
+            <p className="text-xs font-poppins text-gray-500">Pares Totais</p>
+            <p className="text-2xl font-bold font-poppins text-gray-800">{totalProdutos.toLocaleString('pt-BR')}</p>
           </div>
         </div>
-
-{/* FILTROS ATUALIZADOS: + input referencia e botão limpar */}
-        <div className="mb-8 bg-white p-4 rounded-lg shadow-md text-gray-600">
-          <h2 className="text-lg font-semibold font-poppins text-gray-700 mb-4">Filtros</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4"> {/* Ajustado pra 6 colunas */}
-            <input
-              placeholder="Marca"
-              value={marcaFiltro}
-              onChange={(e) => setMarcaFiltro(e.target.value)}
-              className="border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins"
-            />
-            <select
-              value={modeloFiltro}
-              onChange={(e) => setModeloFiltro(e.target.value)}
-              className="border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins"
-            >
-              <option value="">Selecione Modelo</option>
-              {modelosDisponiveis.map((m) => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
-            <select
-              value={generoFiltro}
-              onChange={(e) => setGeneroFiltro(e.target.value)}
-              className="border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins"
-            >
-              <option value="">Selecione Gênero</option>
-              {generosDisponiveis.map((g) => (
-                <option key={g} value={g}>{g}</option>
-              ))}
-            </select>
-            <input
-              placeholder="Tamanho"
-              type="number"
-              value={tamanhoFiltro}
-              onChange={(e) => setTamanhoFiltro(e.target.value)}
-              className="border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins"
-            />
-            {/* Novo input pra referencia */}
-            <input
-              placeholder="Referência"
-              value={referenciaFiltro}
-              onChange={(e) => setReferenciaFiltro(e.target.value)}
-              className="border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins"
-            />
-            <div className="flex space-x-2">
-              <button
-                onClick={aplicarFiltro}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-poppins flex-1"
-              >
-                Aplicar
-              </button>
-              <button
-                onClick={limparFiltros}
-                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors font-poppins flex-1"
-              >
-                Limpar
-              </button>
-            </div>
+        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 flex items-center gap-4 hover:shadow-lg transition-shadow">
+          <DollarSign className="w-8 h-8 text-green-500" />
+          <div>
+            <p className="text-xs font-poppins text-gray-500">Valor Estoque</p>
+            <p className="text-2xl font-bold font-poppins text-gray-800">{formatCurrency(valorTotalRevenda)}</p>
           </div>
         </div>
+        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 flex items-center gap-4 hover:shadow-lg transition-shadow">
+          <AlertTriangle className="w-8 h-8 text-yellow-500" />
+          <div>
+            <p className="text-xs font-poppins text-gray-500">Baixo Estoque</p>
+            <p className="text-2xl font-bold font-poppins text-gray-800">{dashboardData.lowStockCount}</p>
+          </div>
+        </div>
+        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 flex items-center gap-4 hover:shadow-lg transition-shadow">
+          <Package className="w-8 h-8 text-blue-500" />
+          <div>
+            <p className="text-xs font-poppins text-gray-500">Lotes Hoje</p>
+            <p className="text-2xl font-bold font-poppins text-gray-800">{dashboardData.lotesHoje}</p>
+          </div>
+        </div>
+        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 flex items-center gap-4 hover:shadow-lg transition-shadow">
+          <TrendingUp className="w-8 h-8 text-purple-500" />
+          <div>
+            <p className="text-xs font-poppins text-gray-500">Modelos Ativos</p>
+            <p className="text-2xl font-bold font-poppins text-gray-800">{dashboardData.modelosAtivos}</p>
+          </div>
+        </div>
+      </div>
 
-        {/* Gráficos (sem mudanças) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {/* Seus 3 gráficos de Pie aqui - código igual ao original */}
-          <div className="bg-white p-4 rounded-lg shadow-md">
-            <h2 className="text-lg font-semibold font-poppins text-gray-700 mb-4 text-center">Estoque por Gênero</h2>
-            <div className="relative flex justify-center items-center h-56">
-              <div className="w-48 h-48">
-                <Pie
-                  data={{
-                    labels: contagemPorGeneroAgrupado.map((item) => item.genero) || ['Sem dados'],
-                    datasets: [{ label: 'Estoque por Gênero', data: contagemPorGeneroAgrupado.map((item) => item.total) || [0], backgroundColor: colors, borderColor: borderColors, borderWidth: 1 }],
-                  }}
-                  options={{ ...chartOptions, plugins: { ...chartOptions.plugins, title: { text: 'Estoque por Gênero' } } }}
-                />
-              </div>
-            </div>
-            <div className="mt-4 max-h-32 overflow-y-auto">
-              <div className="grid grid-cols-2 gap-2 pr-1">
-                {contagemPorGeneroAgrupado.map((item, i) => (
-                  <div key={i} className="flex items-center text-xs font-poppins text-gray-700">
-                    <span className="w-2 h-2 rounded-full mr-1" style={{ backgroundColor: colors[i % colors.length] }}></span>
-                    {item.genero}: {item.total}
-                  </div>
+      {dashboardData.alerts.length > 0 && (
+        <div className="bg-red-50 border border-red-200 p-5 rounded-xl shadow-md mb-8">
+          <h3 className="text-lg font-semibold font-poppins text-red-800 mb-3 flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5" /> Ações Urgentes
+          </h3>
+          <ul className="space-y-2">
+            {dashboardData.alerts.map((alert, i) => (
+              <li key={i} className="text-sm font-poppins text-red-700 flex items-center justify-between bg-white p-3 rounded-lg shadow-sm">
+                <span className={alert.message.includes('Sandálias Infantil') ? 'font-bold' : ''}>
+                  {alert.message.includes('Sandálias Infantil') && '🔥 '}
+                  {alert.message}
+                </span>
+                <button
+                  onClick={() => toast.error('Funcionalidade "Ver Detalhes" ainda não implementada')}
+                  className="text-xs underline hover:text-red-900 font-medium"
+                >
+                  Ver Detalhes
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200">
+          <h3 className="text-lg font-semibold font-poppins text-gray-700 mb-4">Estoque por Gênero</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={dashboardData.estoquePorGenero}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {dashboardData.estoquePorGenero.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
-              </div>
-            </div>
-          </div>
-          {/* Repita pros outros 2 gráficos... */}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
+        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200">
+          <h3 className="text-lg font-semibold font-poppins text-gray-700 mb-4">Top 5 Modelos em Estoque</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={dashboardData.topModelos}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="quantidade" fill="#3B82F6" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
 
-        {/* LISTA DE PRODUTOS MELHORADA */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold font-poppins text-gray-700 mb-4">Produtos</h2>
-          {produtos.length > 0 ? (
-            <ul className="space-y-3">
-              {produtos.map((p) => {
-                const lucroUnitario = (p.precoVenda || 0) - (p.precoCusto || 0);
-                const valorTotalItem = (p.precoVenda || 0) * p.quantidade;
-                return (
-                  <li key={p.id} className="p-4 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 transition-colors">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <p className="font-medium font-poppins text-gray-900">{p.nome}</p>
-                        <p className="text-sm font-poppins text-gray-500">{p.modelo} | {p.genero} | {p.marca} | Tamanho: {p.tamanho}</p>
-                        <div className="mt-1 text-xs text-gray-500">
-                          <span>Custo: R$ {p.precoCusto?.toFixed(2) || '0,00'}</span>
-                          <span className="mx-2">|</span>
-                          <span>Venda: R$ {p.precoVenda?.toFixed(2) || '0,00'}</span>
-                          <span className="mx-2">|</span>
-                          <span className={`font-semibold ${lucroUnitario >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            Lucro Unit: R$ {lucroUnitario.toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold font-poppins text-gray-900">Qtd: {p.quantidade}</p>
-                        <p className="text-sm text-green-600">Total: R$ {valorTotalItem.toFixed(2)}</p>
+      <div className="bg-white rounded-xl p-5 shadow-md border border-gray-200 mb-8">
+        <h3 className="text-lg font-semibold font-poppins text-gray-700 mb-4">Ranking de Modelos Mais Vendidos (Geral)</h3>
+        {rankingVendidos.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold font-poppins text-gray-600 uppercase tracking-wider">Modelo</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold font-poppins text-gray-600 uppercase tracking-wider">Unidades Vendidas</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {rankingVendidos.map((item, index) => (
+                  <tr key={index} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3 text-sm font-poppins text-gray-900">{item.modelo}</td>
+                    <td className="px-4 py-3 text-sm font-poppins text-gray-900">{item.qtyVendida}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500 font-poppins">Nenhum dado de vendas disponível.</p>
+        )}
+      </div>
+
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <h2 className="text-xl font-semibold font-poppins text-gray-700 mb-4">Produtos</h2>
+        {produtos.length > 0 ? (
+          <ul className="space-y-3">
+            {produtos.map((p) => {
+              const lucroUnitario = (p.precoVenda || 0) - (p.precoCusto || 0);
+              const valorTotalItem = (p.precoVenda || 0) * p.quantidade;
+              return (
+                <li key={p.id} className="p-4 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 transition-colors">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <p className="font-medium font-poppins text-gray-900">{p.nome}</p>
+                      <p className="text-sm font-poppins text-gray-500">{p.modelo} | {p.genero} | {p.marca} | Tamanho: {p.tamanho}</p>
+                      <div className="mt-1 text-xs text-gray-500">
+                        <span>Custo: R$ {p.precoCusto?.toFixed(2) || '0,00'}</span>
+                        <span className="mx-2">|</span>
+                        <span>Venda: R$ {p.precoVenda?.toFixed(2) || '0,00'}</span>
+                        <span className="mx-2">|</span>
+                        <span className={`font-semibold ${lucroUnitario >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          Lucro Unit: R$ {lucroUnitario.toFixed(2)}
+                        </span>
                       </div>
                     </div>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <p className="text-gray-500 font-poppins text-center">Nenhum produto encontrado.</p>
-          )}
-
-          <div className="flex justify-center mt-6 space-x-3">
-            <button
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(p - 1, 1))}
-              className="px-4 py-2 bg-blue-600 text-white font-poppins rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
-              Anterior
-            </button>
-            <span className="px-4 py-2 bg-gray-200 font-poppins rounded-md text-gray-700">Página {page} de {totalPages}</span>
-            <button
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-              className="px-4 py-2 bg-blue-600 text-white font-poppins rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
-              Próxima
-            </button>
-          </div>
+                    <div className="text-right">
+                      <p className="font-semibold font-poppins text-gray-900">Qtd: {p.quantidade}</p>
+                      <p className="text-sm text-green-600">Total: R$ {valorTotalItem.toFixed(2)}</p>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="text-gray-500 font-poppins text-center">Nenhum produto encontrado.</p>
+        )}
+        <div className="flex justify-center mt-6 space-x-3">
+          <button
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(p - 1, 1))}
+            className="px-4 py-2 bg-blue-600 text-white font-poppins rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          >
+            Anterior
+          </button>
+          <span className="px-4 py-2 bg-gray-200 font-poppins rounded-md text-gray-700">Página {page} de {totalPages}</span>
+          <button
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+            className="px-4 py-2 bg-blue-600 text-white font-poppins rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          >
+            Próxima
+          </button>
         </div>
-
-        <div className="mt-8 flex justify-center">
-          <Link href="/" className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium font-poppins rounded-md hover:bg-blue-700 transition-colors duration-200 shadow-md">
-            Voltar a Home
-          </Link>
-        </div>
-
+      </div>
+      <div className="mt-8 flex justify-center">
+        <Link href="/" className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium font-poppins rounded-md hover:bg-blue-700 transition-colors duration-200 shadow-md">
+          Voltar a Home
+        </Link>
       </div>
     </div>
   );

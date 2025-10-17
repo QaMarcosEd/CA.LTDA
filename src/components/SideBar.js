@@ -7,7 +7,7 @@ import { Menu, X } from 'lucide-react';
 const menuItems = [
   { id: '/', label: 'Home', icon: '🏠', href: '/' },
   { id: 'dashboard', label: 'Dashboard', icon: '📊', href: '/dashboard' },
-  { id: 'clientes', label: 'Clientes', icon: '🧑‍🦱', href: '/clientes' },
+  { id: 'clientes', label: 'Clientes', icon: '🧑', href: '/clientes' },
   { id: 'estoque', label: 'Estoque', icon: '📦', href: '/estoque' },
   { id: 'vendas', label: 'Vendas', icon: '📈', href: '/vendas' },
 ];
