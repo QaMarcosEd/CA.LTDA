@@ -1,31 +1,13 @@
-// api/produtos/[id]/routes.js
-import { NextResponse } from 'next/server'
+// app/api/produtos/[id]/route.js (corrigi 'routes' pra 'route')
+import { NextResponse } from 'next/server';
+import { getProdutoById } from '../controller/produtosController';
 
-import { getProdutoById } from '../controller/produtosController'
-
-// Função que lida com requisições GET para buscar um produto específico pelo ID
-export async function GET(req, { params }) {
+export async function GET(request, { params }) {
   try {
-    const { id } = params
-    
-    const produto = await getProdutoById(parseInt(id))
-
-    if (!produto) {
-      return NextResponse.json(
-        { error: 'Produto não encontrado' },
-        { status: 404 }
-      )
-    }
-
-    return NextResponse.json(produto, { status: 200 })
-
+    const produto = await getProdutoById(params.id);
+    return NextResponse.json(produto);
   } catch (error) {
-    console.error('Erro ao buscar produto:', error)
-    
-    return NextResponse.json(
-      { error: 'Erro interno no servidor' },
-      { status: 500 }
-    )
+    const status = error.message === 'Produto não encontrado' ? 404 : 500;
+    return NextResponse.json({ error: error.message }, { status });
   }
 }
-

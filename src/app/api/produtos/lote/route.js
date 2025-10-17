@@ -1,13 +1,14 @@
-// api/produtos/lote/routes.js
+// app/api/produtos/lote/route.js
+import { NextResponse } from 'next/server';
 import { createLote } from './controller/loteController';
 
 export async function POST(request) {
   try {
     const data = await request.json();
     const result = await createLote(data);
-    return new Response(JSON.stringify(result.data), { status: result.status });
+    return NextResponse.json(result.data, { status: result.status });
   } catch (error) {
-    console.error('Erro ao processar lote:', error);
-    return new Response(JSON.stringify({ error: 'Erro ao processar lote', details: error.message }), { status: 500 });
+    const status = error.message.includes('faltando') || error.message.includes('inválida') ? 400 : 500;
+    return NextResponse.json({ error: error.message }, { status });
   }
 }

@@ -1,52 +1,45 @@
-// // api/produtos/controller/produtosController.js
-import { PrismaClient } from '@prisma/client'
-const prisma = new PrismaClient()
+// app/api/produtos/controller/produtosController.js
+import { prisma } from '../../../lib/prisma'; // Singleton central
 
 export async function getAllProdutos({ marca, modelo, genero, tamanho, referencia, tipo, page = 1, limit = 10 }) {
   try {
     const where = {};
-    if (marca) where.marca = { contains: marca };
-    if (modelo) where.modelo = { contains: modelo };
-    if (genero) where.genero = { contains: genero };
+    if (marca) where.marca = { contains: marca, mode: 'insensitive' }; // Case insensitive
+    if (modelo) where.modelo = { contains: modelo, mode: 'insensitive' };
+    if (genero) where.genero = { contains: genero, mode: 'insensitive' };
     if (tamanho) where.tamanho = { equals: parseInt(tamanho) };
-    if (referencia) where.referencia = { contains: referencia };
+    if (referencia) where.referencia = { contains: referencia, mode: 'insensitive' };
 
-    console.log('Applied where filters:', where); // Log dos filtros aplicados
+    page = parseInt(page) || 1;
+    limit = parseInt(limit) || 10;
+    if (page < 1 || limit < 1) throw new Error('Parâmetros de paginação inválidos');
 
-    // Se tipo for passado, faz contagem/groupBy
+    // Agregações pra dashboards
     if (tipo && ['genero', 'modelo', 'marca'].includes(tipo)) {
       const contagem = await prisma.produto.groupBy({
         by: [tipo],
         _sum: { quantidade: true },
         where,
       });
-
       return contagem.map((item) => ({
         [tipo]: item[tipo] || 'Desconhecido',
         total: item._sum.quantidade || 0,
       }));
     }
 
-    // Construção dinâmica da cláusula WHERE pra queries raw (comum pras duas sums)
-    const whereClause = Object.keys(where).length > 0 ? `WHERE ${Object.entries(where).map(([key, value]) => {
-      if (typeof value === 'object' && value.contains) {
-        return `LOWER("${key}") LIKE LOWER('%${value.contains}%')`;
-      } else if (typeof value === 'object' && value.equals) {
-        return `"${key}" = ${value.equals}`;
-      }
-      return `"${key}" = '${value}'`; // Ajuste genérico
-    }).join(' AND ')}` : '';
-
-    // Busca normal com paginação e totals
-    const [totalAggregate, valorRevendaRaw, custoEstoqueRaw, produtos] = await Promise.all([
+    // Totals precisos (substitua TODO o Promise.all por isso)
+    const [totalCount, totalAggregate, produtosParaCalc, produtos] = await Promise.all([
+      prisma.produto.count({ where }), // Count real pra pages
       prisma.produto.aggregate({
         where,
         _sum: { quantidade: true },
       }),
-      // Query pra valor de revenda (precoVenda * qtd)
-      prisma.$queryRawUnsafe(`SELECT COALESCE(SUM("precoVenda" * "quantidade"), 0) as valor_total FROM "Produto" ${whereClause}`),
-      // Nova query pra custo total (precoCusto * qtd)
-      prisma.$queryRawUnsafe(`SELECT COALESCE(SUM("precoCusto" * "quantidade"), 0) as custo_total FROM "Produto" ${whereClause}`),
+      // Nova query: Puxo só campos pra cálculo de revenda/custo (otimizado, sem dados extras)
+      prisma.produto.findMany({
+        where,
+        select: { precoVenda: true, quantidade: true, precoCusto: true },
+      }),
+      // Query paginada principal (mantém select completo)
       prisma.produto.findMany({
         where,
         skip: (page - 1) * limit,
@@ -60,59 +53,81 @@ export async function getAllProdutos({ marca, modelo, genero, tamanho, referenci
           cor: true,
           quantidade: true,
           precoVenda: true,
-          precoCusto: true, // Adicionado: inclui custo na lista de produtos
+          precoCusto: true,
           genero: true,
           modelo: true,
           marca: true,
           disponivel: true,
           lote: true,
           dataRecebimento: true,
+          imagem: true,
         },
       }),
     ]);
 
-    console.log('Generated SQL Revenda:', `SELECT COALESCE(SUM("precoVenda" * "quantidade"), 0) as valor_total FROM "Produto" ${whereClause}`);
-    console.log('Raw Query Revenda Result:', valorRevendaRaw);
-    console.log('Generated SQL Custo:', `SELECT COALESCE(SUM("precoCusto" * "quantidade"), 0) as custo_total FROM "Produto" ${whereClause}`);
-    console.log('Raw Query Custo Result:', custoEstoqueRaw);
-    console.log('Sample Products:', produtos.slice(0, 5));
-
-    const valorTotalRevenda = valorRevendaRaw[0]?.valor_total || 0;
-    const custoTotalEstoque = custoEstoqueRaw[0]?.custo_total || 0;
+    // Cálculo em JS (seguro e simples)
+    const valorTotalRevenda = produtosParaCalc.reduce((sum, p) => sum + (parseFloat(p.precoVenda || 0) * parseInt(p.quantidade || 0)), 0);
+    const custoTotalEstoque = produtosParaCalc.reduce((sum, p) => sum + (parseFloat(p.precoCusto || 0) * parseInt(p.quantidade || 0)), 0);
     const lucroProjetado = valorTotalRevenda - custoTotalEstoque;
     const margemLucro = custoTotalEstoque > 0 ? ((lucroProjetado / custoTotalEstoque) * 100).toFixed(2) : 0;
 
     return {
       data: produtos,
-      totalPages: Math.ceil((totalAggregate._sum.quantidade || 0) / limit),
+      totalPages: Math.ceil(totalCount / limit),
       totalProdutos: totalAggregate._sum.quantidade || 0,
-      valorTotalRevenda: valorTotalRevenda.toFixed(2), // Renomeado
-      custoTotalEstoque: custoTotalEstoque.toFixed(2), // Novo
-      lucroProjetado: lucroProjetado.toFixed(2), // Novo
-      margemLucro: `${margemLucro}%`, // Novo
+      valorTotalRevenda: valorTotalRevenda.toFixed(2),
+      custoTotalEstoque: custoTotalEstoque.toFixed(2),
+      lucroProjetado: lucroProjetado.toFixed(2),
+      margemLucro: `${margemLucro}%`,
     };
   } catch (error) {
     console.error('Erro no getAllProdutos:', error);
-    throw new Error('Erro ao buscar produtos');
+    throw error;
+  }
+}
+
+export async function createProduto(data) { // Adicionado: Pra POST individual (similar a lote mas single)
+  try {
+    // Validações similares ao lote...
+    const quantidade = parseInt(data.quantidade);
+    if (isNaN(quantidade) || quantidade < 0) throw new Error('Quantidade inválida');
+
+    const produto = await prisma.produto.create({
+      data: {
+        nome: data.nome,
+        tamanho: parseInt(data.tamanho),
+        referencia: data.referencia,
+        cor: data.cor,
+        quantidade,
+        precoVenda: parseFloat(data.precoVenda),
+        precoCusto: parseFloat(data.precoCusto) || null,
+        genero: data.genero,
+        modelo: data.modelo,
+        marca: data.marca,
+        disponivel: quantidade > 0,
+        lote: data.lote || null,
+        dataRecebimento: data.dataRecebimento ? new Date(data.dataRecebimento) : new Date(),
+        imagem: data.imagem || null,
+      },
+    });
+    return { status: 201, data: produto };
+  } catch (error) {
+    console.error('Erro ao criar produto:', error);
+    return { status: 500, data: { error: 'Erro ao criar produto', details: error.message } };
   }
 }
 
 export async function updateProduto(data) {
   try {
     const id = parseInt(data.id);
-    const quantidade = parseInt(data.quantidade);
-    const precoVenda = parseFloat(data.precoVenda) || 0;
-    const precoCusto = parseFloat(data.precoCusto) || 0; // Adicionado: suporte ao novo campo
+    if (isNaN(id)) throw new Error('ID inválido');
+
     const dataRecebimento = data.dataRecebimento ? new Date(data.dataRecebimento) : undefined;
+    if (dataRecebimento && isNaN(dataRecebimento.getTime())) throw new Error('Data de recebimento inválida');
 
-    if (dataRecebimento && isNaN(dataRecebimento.getTime())) {
-      return { status: 400, data: { error: 'Data de recebimento inválida' } };
-    }
-
-    // Validação extra pros preços
-    if (isNaN(precoVenda) || isNaN(precoCusto) || precoVenda < 0 || precoCusto < 0) {
-      return { status: 400, data: { error: 'Preços inválidos' } };
-    }
+    const precoVenda = parseFloat(data.precoVenda) || 0;
+    const precoCusto = parseFloat(data.precoCusto) || 0;
+    if (precoVenda < 0 || precoCusto < 0) throw new Error('Preços inválidos');
 
     const produto = await prisma.produto.update({
       where: { id },
@@ -121,43 +136,44 @@ export async function updateProduto(data) {
         tamanho: parseInt(data.tamanho),
         referencia: data.referencia,
         cor: data.cor,
-        quantidade,
+        quantidade: parseInt(data.quantidade),
         precoVenda,
-        precoCusto, // Adicionado
+        precoCusto,
         genero: data.genero,
         modelo: data.modelo,
         marca: data.marca,
-        disponivel: quantidade > 0,
+        disponivel: parseInt(data.quantidade) > 0,
         lote: data.lote || null,
         dataRecebimento,
-        imagem: data.imagem || null, // Adicionado
+        imagem: data.imagem || null,
       },
     });
-
     return { status: 200, data: produto };
   } catch (error) {
     console.error('Erro ao atualizar produto:', error);
-    return { status: 500, data: { error: 'Erro ao atualizar produto', details: error.message } };
+    throw error;
   }
 }
 
 export async function deleteProduto(id) {
   try {
-    await prisma.produto.delete({ where: { id: parseInt(id) } });
+    const produtoId = parseInt(id);
+    if (isNaN(produtoId)) throw new Error('ID inválido');
+    await prisma.produto.delete({ where: { id: produtoId } });
     return { status: 200, data: { message: 'Produto deletado com sucesso' } };
   } catch (error) {
     console.error('Erro ao deletar produto:', error);
-    if (error.code === 'P2003') {
-      return { status: 409, data: { error: 'Não é possível deletar o produto porque ele está vinculado a uma venda.' } };
-    }
-    return { status: 500, data: { error: 'Erro ao deletar produto', details: error.message } };
+    if (error.code === 'P2003') throw new Error('Não é possível deletar o produto porque ele está vinculado a uma venda.');
+    throw error;
   }
 }
 
 export async function getProdutoById(id) {
   try {
+    const produtoId = parseInt(id);
+    if (isNaN(produtoId)) throw new Error('ID inválido');
     const produto = await prisma.produto.findUnique({
-      where: { id },
+      where: { id: produtoId },
       select: {
         id: true,
         nome: true,
@@ -166,19 +182,20 @@ export async function getProdutoById(id) {
         cor: true,
         quantidade: true,
         precoVenda: true,
-        precoCusto: true, // Adicionado
+        precoCusto: true,
         genero: true,
         modelo: true,
         marca: true,
         disponivel: true,
         lote: true,
         dataRecebimento: true,
-        imagem: true, // Adicionado
+        imagem: true,
       },
     });
+    if (!produto) throw new Error('Produto não encontrado');
     return produto;
   } catch (error) {
-    console.error('Erro no controller getProdutoById:', error);
+    console.error('Erro no getProdutoById:', error);
     throw error;
   }
 }
