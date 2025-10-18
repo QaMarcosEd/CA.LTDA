@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { formatPhoneNumber } from '../../../utils/formatPhoneNumber';
+import PageHeader from '@/components/Header';
 
 export default function Clientes() {
   const [clientes, setClientes] = useState([]);
@@ -92,18 +93,20 @@ export default function Clientes() {
     return diasDesdeUltima > 90;
   };
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-green-500 border-solid"></div>
-              <span className="ml-3 text-gray-600 font-poppins">Carregando...</span>
-    </div>
-  );
+    if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 p-6">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-500 border-solid"></div>
+        <span className="ml-3 text-gray-600 font-poppins">Carregando clientes...</span>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold font-poppins text-gray-900 mb-8 text-center">Lista de Clientes</h1>
+    <div className="p-6 bg-gray-50 min-h-screen">
+        <PageHeader title="Clientes" greeting="Bom dia! Visão Geral do Clientes" />
 
+      <div className="max-w-7xl mx-auto">
         {/* Resumo no topo */}
         <div className="bg-blue-50 p-4 rounded-lg shadow-md mb-6 grid grid-cols-1 sm:grid-cols-4 gap-4 text-center">
           <div>

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { formatDateToBrazil } from '../../../utils/formatDate';
 import ModalGerenciarParcelas from '@/components/ui/modals/ModalGerenciarParcelas';
+import PageHeader from '@/components/Header';
 
 export default function Vendas() {
   const [vendas, setVendas] = useState([]);
@@ -136,12 +137,14 @@ export default function Vendas() {
     }
   };
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-green-500 border-solid"></div>
-              <span className="ml-3 text-gray-600 font-poppins">Carregando...</span>
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 p-6">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-500 border-solid"></div>
+        <span className="ml-3 text-gray-600 font-poppins">Carregando vendas...</span>
+      </div>
+    );
+  }
 
   if (error) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -150,10 +153,9 @@ export default function Vendas() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
+    <div className="p-6 bg-gray-50 min-h-screen">
+    <PageHeader title="Vendas" greeting="Bom dia! Visão Geral do Gerenciamento de Vendas" />
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold font-poppins text-gray-900 mb-8 text-center">Gerenciador de Vendas</h1>
-
         {/* Seção de Resumo */}
         <div className="bg-white rounded-lg p-6 mb-8 shadow-lg">
           <h2 className="text-xl font-bold mb-4 text-gray-600">Resumo Geral</h2>

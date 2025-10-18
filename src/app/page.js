@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
 import toast from 'react-hot-toast';
-import { Search, Package, AlertTriangle, DollarSign, Box, TrendingUp } from 'lucide-react';
+import { Package, AlertTriangle, DollarSign, TrendingUp } from 'lucide-react';
+import PageHeader from '@/components/Header';
 
 const formatCurrency = (value) => {
   const num = parseFloat(value) || 0;
@@ -99,12 +99,7 @@ export default function Home() {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold font-poppins text-gray-800 mb-2 flex items-center gap-2">
-          <span className="text-3xl">Dashboard</span> Bom dia! Visão Geral do Estoque
-        </h2>
-        <p className="text-sm font-poppins text-gray-600">Atualizado em {format(new Date(), 'dd/MM/yyyy HH:mm')}</p>
-      </div>
+      <PageHeader title="Home" greeting="Bom dia! Visão Geral da Home" />
 
       {/* Toggle para época */}
       <div className="mb-4 text-gray-500">

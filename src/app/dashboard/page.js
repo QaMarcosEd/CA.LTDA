@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Search, Package, AlertTriangle, DollarSign, Box, TrendingUp } from 'lucide-react';
+import { Package, AlertTriangle, DollarSign, Box, TrendingUp } from 'lucide-react';
+import PageHeader from '@/components/Header';
 import toast from 'react-hot-toast';
 
 export default function Dashboard() {
@@ -26,6 +27,7 @@ export default function Dashboard() {
     topModelos: [],
   });
   const [rankingVendidos, setRankingVendidos] = useState([]);
+  const [taxasCartao, setTaxasCartao] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [epoca, setEpoca] = useState('normal');
@@ -119,9 +121,21 @@ export default function Dashboard() {
     }
   };
 
+  const fetchTaxasCartao = async () => {
+    try {
+      const res = await fetch('/api/taxas-cartao');
+      if (!res.ok) throw new Error('Erro ao buscar taxas de cartão');
+      const data = await res.json();
+      setTaxasCartao(data);
+    } catch (err) {
+      console.error('Erro ao carregar taxas de cartão:', err);
+      setTaxasCartao([]);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
-      await Promise.all([fetchProdutos(page), fetchResumoVendas(), fetchDashboardData(), fetchRankingVendidos()]);
+      await Promise.all([fetchProdutos(page), fetchResumoVendas(), fetchDashboardData(), fetchRankingVendidos(), fetchTaxasCartao()]);
     };
     fetchData();
   }, [page, epoca]);
@@ -155,12 +169,7 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold font-poppins text-gray-800 mb-2 flex items-center gap-2">
-          <span className="text-3xl">Dashboard</span> Bom dia! Visão Geral do Estoque
-        </h2>
-        <p className="text-sm font-poppins text-gray-600">Atualizado em {format(new Date(), 'dd/MM/yyyy HH:mm')}</p>
-      </div>
+      <PageHeader title="Dashboard" greeting="Bom dia! Visão Geral do Estoque" />
 
       {/* Toggle para época */}
       <div className="mb-4 text-gray-500">
@@ -260,7 +269,7 @@ export default function Dashboard() {
             </PieChart>
           </ResponsiveContainer>
         </div>
-        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200">
+        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 text-gray-500">
           <h3 className="text-lg font-semibold font-poppins text-gray-700 mb-4">Top 5 Modelos em Estoque</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={dashboardData.topModelos}>
@@ -299,6 +308,32 @@ export default function Dashboard() {
           <p className="text-sm text-gray-500 font-poppins">Nenhum dado de vendas disponível.</p>
         )}
       </div>
+
+<div className="bg-white p-6 rounded-lg shadow-md mb-8">
+  <h2 className="text-xl font-semibold font-poppins text-gray-700 mb-4">Taxas de Cartão Ativas</h2>
+  {taxasCartao.length > 0 ? (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {['VISA', 'MASTERCARD', 'ELO'].map((bandeira) => {
+        const taxasBandeira = taxasCartao.filter((t) => t.bandeira === bandeira);
+        return (
+          <div key={bandeira} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <h3 className="text-md font-semibold font-poppins text-gray-800 mb-2">{bandeira}</h3>
+            <ul className="space-y-2">
+              {taxasBandeira.map((taxa) => (
+                <li key={taxa.id} className="flex justify-between text-sm font-poppins text-gray-700">
+                  <span>{taxa.modalidade.replace('CREDITO_X', 'Crédito x')}</span>
+                  <span className="font-medium">{taxa.taxaPercentual}%</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
+    </div>
+  ) : (
+    <p className="text-sm text-gray-500 font-poppins">Nenhuma taxa de cartão encontrada.</p>
+  )}
+</div>
 
       <div className="bg-white p-6 rounded-lg shadow-md">
         <h2 className="text-xl font-semibold font-poppins text-gray-700 mb-4">Produtos</h2>
