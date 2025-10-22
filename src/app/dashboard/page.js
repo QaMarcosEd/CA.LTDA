@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { format } from 'date-fns';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Package, AlertTriangle, DollarSign, Box, TrendingUp } from 'lucide-react';
+import { Package, AlertTriangle, DollarSign, Box, TrendingUp, CreditCard, Zap } from 'lucide-react';
 import PageHeader from '@/components/Header';
 import toast from 'react-hot-toast';
 
@@ -39,6 +38,7 @@ export default function Dashboard() {
     return `R$ ${num.toFixed(2).replace('.', ',')}`;
   };
 
+  // TODAS AS FUNÇÕES FETCH - IGUAIS ÀS SUAS
   const fetchResumoVendas = async () => {
     try {
       const res = await fetch('/api/vendas?resumo=true');
@@ -140,19 +140,12 @@ export default function Dashboard() {
     fetchData();
   }, [page, epoca]);
 
-  const getMargemColor = (margemStr) => {
-    const margemNum = parseFloat(margemStr.replace('%', ''));
-    if (margemNum >= 50) return 'text-green-600';
-    if (margemNum >= 30) return 'text-yellow-600';
-    return 'text-red-600';
-  };
-
-  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444'];
+  const COLORS = ['#394189', '#c33638', '#10B981', '#F59E0B'];
 
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 space-y-4">
       <div className="w-64 h-4 bg-gray-300 animate-pulse rounded"></div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {[...Array(6)].map((_, i) => (
           <div key={i} className="w-48 h-32 bg-gray-300 animate-pulse rounded"></div>
         ))}
@@ -163,92 +156,93 @@ export default function Dashboard() {
 
   if (error) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <p className="text-lg font-medium font-poppins text-red-600">{error}</p>
+      <p className="text-lg font-medium text-red-600">{error}</p>
     </div>
   );
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <PageHeader title="Dashboard" greeting="Bom dia! Visão Geral do Estoque" />
+      <PageHeader title="Dashboard" greeting="👟 Visão Geral - Calçados Araújo" />
 
-      {/* Toggle para época */}
-      <div className="mb-4 text-gray-500">
-        <label className="text-sm font-poppins text-gray-600 mr-2">Época:</label>
+      {/* TOGGLE ÉPOCA - SIMPLES */}
+      <div className="mb-4">
+        <label className="text-sm font-semibold text-[#394189] mr-2">Época:</label>
         <select
           value={epoca}
           onChange={(e) => setEpoca(e.target.value)}
-          className="border border-gray-300 rounded-md p-2 font-poppins text-sm"
+          className="border border-[#394189]/20 rounded-lg p-2 focus:ring-2 focus:ring-[#394189] bg-white text-gray-500"
         >
           <option value="normal">Normal</option>
-          <option value="pico">Pico (ex.: verão, volta às aulas)</option>
+          <option value="pico">🔥 Pico de Vendas</option>
         </select>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 mb-8">
-        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 flex items-center gap-4 hover:shadow-lg transition-shadow">
-          <div className="text-3xl">📦</div>
-          <div>
-            <p className="text-xs font-poppins text-gray-500">Pares Totais</p>
-            <p className="text-2xl font-bold font-poppins text-gray-800">{totalProdutos.toLocaleString('pt-BR')}</p>
-          </div>
-        </div>
-        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 flex items-center gap-4 hover:shadow-lg transition-shadow">
-          <DollarSign className="w-8 h-8 text-green-500" />
-          <div>
-            <p className="text-xs font-poppins text-gray-500">Valor Estoque</p>
-            <p className="text-2xl font-bold font-poppins text-gray-800">{formatCurrency(valorTotalRevenda)}</p>
-          </div>
-        </div>
-        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 flex items-center gap-4 hover:shadow-lg transition-shadow">
-          <AlertTriangle className="w-8 h-8 text-yellow-500" />
-          <div>
-            <p className="text-xs font-poppins text-gray-500">Baixo Estoque</p>
-            <p className="text-2xl font-bold font-poppins text-gray-800">{dashboardData.lowStockCount}</p>
-          </div>
-        </div>
-        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 flex items-center gap-4 hover:shadow-lg transition-shadow">
-          <Package className="w-8 h-8 text-blue-500" />
-          <div>
-            <p className="text-xs font-poppins text-gray-500">Lotes Hoje</p>
-            <p className="text-2xl font-bold font-poppins text-gray-800">{dashboardData.lotesHoje}</p>
-          </div>
-        </div>
-        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 flex items-center gap-4 hover:shadow-lg transition-shadow">
-          <TrendingUp className="w-8 h-8 text-purple-500" />
-          <div>
-            <p className="text-xs font-poppins text-gray-500">Modelos Ativos</p>
-            <p className="text-2xl font-bold font-poppins text-gray-800">{dashboardData.modelosAtivos}</p>
-          </div>
-        </div>
+      {/* CARDS - SUA ESTRUTURA ORIGINAL */}
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 mb-8">
+  {[
+    { icon: Package, label: 'Pares Totais', value: totalProdutos.toLocaleString('pt-BR'), color: '#394189' },
+    { icon: DollarSign, label: 'Valor Estoque', value: formatCurrency(valorTotalRevenda), color: '#c33638' },
+    { icon: AlertTriangle, label: 'Baixo Estoque', value: dashboardData.lowStockCount, color: '#F59E0B' },
+    { icon: Box, label: 'Lotes Hoje', value: dashboardData.lotesHoje, color: '#10B981' },
+    { icon: TrendingUp, label: 'Modelos Ativos', value: dashboardData.modelosAtivos, color: '#8B5CF6' },
+  ].map((card, i) => (
+    <div 
+      key={i}
+      className="group relative bg-white rounded-xl p-4 shadow-md border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden h-24 flex items-center justify-between"
+    >
+      {/* BARRA LATERAL SUBTIL */}
+      <div 
+        className="absolute left-0 top-0 h-full w-0.5"
+        style={{ backgroundColor: card.color }}
+      ></div>
+      
+      {/* ÍCONE COMPACTO */}
+      <div className="relative flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-white to-gray-50 flex items-center justify-center shadow-sm border border-gray-100">
+        <card.icon className={`w-5 h-5`} style={{ color: card.color }} />
       </div>
+      
+      {/* INFORMAÇÕES ALINHADAS */}
+      <div className="flex-1 ml-3 pr-2">
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+          {card.label}
+        </p>
+        <p className="text-lg font-bold text-gray-900 truncate">
+          {card.value}
+        </p>
+      </div>
+      
+      {/* ÍCONE SETA PEQUENO */}
+      <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <TrendingUp className={`w-3.5 h-3.5`} style={{ color: card.color }} />
+      </div>
+    </div>
+  ))}
+</div>
 
+      {/* ALERTS - SUA ESTRUTURA */}
       {dashboardData.alerts.length > 0 && (
         <div className="bg-red-50 border border-red-200 p-5 rounded-xl shadow-md mb-8">
-          <h3 className="text-lg font-semibold font-poppins text-red-800 mb-3 flex items-center gap-2">
+          <h3 className="text-lg font-semibold text-red-800 mb-3 flex items-center gap-2">
             <AlertTriangle className="w-5 h-5" /> Ações Urgentes
           </h3>
           <ul className="space-y-2">
             {dashboardData.alerts.map((alert, i) => (
-              <li key={i} className="text-sm font-poppins text-red-700 flex items-center justify-between bg-white p-3 rounded-lg shadow-sm">
+              <li key={i} className="text-sm text-red-700 flex items-center justify-between bg-white p-3 rounded-lg shadow-sm">
                 <span className={alert.message.includes('Sandálias Infantil') ? 'font-bold' : ''}>
                   {alert.message.includes('Sandálias Infantil') && '🔥 '}
                   {alert.message}
                 </span>
-                <button
-                  onClick={() => toast.error('Funcionalidade "Ver Detalhes" ainda não implementada')}
-                  className="text-xs underline hover:text-red-900 font-medium"
-                >
-                  Ver Detalhes
-                </button>
+                <button className="text-xs underline hover:text-red-900 font-medium">Ver Detalhes</button>
               </li>
             ))}
           </ul>
         </div>
       )}
 
+      {/* GRÁFICOS - SUA ESTRUTURA */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200">
-          <h3 className="text-lg font-semibold font-poppins text-gray-700 mb-4">Estoque por Gênero</h3>
+          <h3 className="text-lg font-semibold text-[#394189] mb-4">Estoque por Gênero</h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -269,74 +263,78 @@ export default function Dashboard() {
             </PieChart>
           </ResponsiveContainer>
         </div>
-        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 text-gray-500">
-          <h3 className="text-lg font-semibold font-poppins text-gray-700 mb-4">Top 5 Modelos em Estoque</h3>
+
+        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200">
+          <h3 className="text-lg font-semibold text-[#c33638] mb-4">Top 5 Modelos em Estoque</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={dashboardData.topModelos}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
               <Tooltip />
-              <Bar dataKey="quantidade" fill="#3B82F6" />
+              <Bar dataKey="quantidade" fill="#394189" />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
+      {/* RANKING VENDIDOS - SUA ESTRUTURA */}
       <div className="bg-white rounded-xl p-5 shadow-md border border-gray-200 mb-8">
-        <h3 className="text-lg font-semibold font-poppins text-gray-700 mb-4">Ranking de Modelos Mais Vendidos (Geral)</h3>
+        <h3 className="text-lg font-semibold text-[#394189] mb-4">Ranking de Modelos Mais Vendidos</h3>
         {rankingVendidos.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-100">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold font-poppins text-gray-600 uppercase tracking-wider">Modelo</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold font-poppins text-gray-600 uppercase tracking-wider">Unidades Vendidas</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Modelo</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Unidades Vendidas</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {rankingVendidos.map((item, index) => (
                   <tr key={index} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 text-sm font-poppins text-gray-900">{item.modelo}</td>
-                    <td className="px-4 py-3 text-sm font-poppins text-gray-900">{item.qtyVendida}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">{item.modelo}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">{item.qtyVendida}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         ) : (
-          <p className="text-sm text-gray-500 font-poppins">Nenhum dado de vendas disponível.</p>
+          <p className="text-sm text-gray-500 text-center">Nenhum dado de vendas disponível.</p>
         )}
       </div>
 
-<div className="bg-white p-6 rounded-lg shadow-md mb-8">
-  <h2 className="text-xl font-semibold font-poppins text-gray-700 mb-4">Taxas de Cartão Ativas</h2>
-  {taxasCartao.length > 0 ? (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {['VISA', 'MASTERCARD', 'ELO'].map((bandeira) => {
-        const taxasBandeira = taxasCartao.filter((t) => t.bandeira === bandeira);
-        return (
-          <div key={bandeira} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="text-md font-semibold font-poppins text-gray-800 mb-2">{bandeira}</h3>
-            <ul className="space-y-2">
-              {taxasBandeira.map((taxa) => (
-                <li key={taxa.id} className="flex justify-between text-sm font-poppins text-gray-700">
-                  <span>{taxa.modalidade.replace('CREDITO_X', 'Crédito x')}</span>
-                  <span className="font-medium">{taxa.taxaPercentual}%</span>
-                </li>
-              ))}
-            </ul>
+      {/* TAXAS CARTÃO - SUA ESTRUTURA */}
+      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
+        <h2 className="text-xl font-semibold text-[#394189] mb-4">Taxas de Cartão Ativas</h2>
+        {taxasCartao.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {['VISA', 'MASTERCARD', 'ELO'].map((bandeira) => {
+              const taxasBandeira = taxasCartao.filter((t) => t.bandeira === bandeira);
+              return (
+                <div key={bandeira} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <h3 className="text-md font-semibold text-[#394189] mb-2">{bandeira}</h3>
+                  <ul className="space-y-2">
+                    {taxasBandeira.map((taxa) => (
+                      <li key={taxa.id} className="flex justify-between text-sm text-gray-700">
+                        <span>{taxa.modalidade.replace('CREDITO_X', 'Crédito x')}</span>
+                        <span className="font-semibold text-[#c33638]">{taxa.taxaPercentual}%</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
           </div>
-        );
-      })}
-    </div>
-  ) : (
-    <p className="text-sm text-gray-500 font-poppins">Nenhuma taxa de cartão encontrada.</p>
-  )}
-</div>
+        ) : (
+          <p className="text-sm text-gray-500">Nenhuma taxa de cartão encontrada.</p>
+        )}
+      </div>
 
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold font-poppins text-gray-700 mb-4">Produtos</h2>
+      {/* PRODUTOS - SUA ESTRUTURA ORIGINAL 100% */}
+      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
+        <h2 className="text-xl font-semibold text-[#394189] mb-4">Produtos</h2>
         {produtos.length > 0 ? (
           <ul className="space-y-3">
             {produtos.map((p) => {
@@ -346,8 +344,8 @@ export default function Dashboard() {
                 <li key={p.id} className="p-4 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 transition-colors">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <p className="font-medium font-poppins text-gray-900">{p.nome}</p>
-                      <p className="text-sm font-poppins text-gray-500">{p.modelo} | {p.genero} | {p.marca} | Tamanho: {p.tamanho}</p>
+                      <p className="font-medium text-gray-900">{p.nome}</p>
+                      <p className="text-sm text-gray-500">{p.modelo} | {p.genero} | {p.marca} | Tamanho: {p.tamanho}</p>
                       <div className="mt-1 text-xs text-gray-500">
                         <span>Custo: R$ {p.precoCusto?.toFixed(2) || '0,00'}</span>
                         <span className="mx-2">|</span>
@@ -359,7 +357,7 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold font-poppins text-gray-900">Qtd: {p.quantidade}</p>
+                      <p className="font-semibold text-gray-900">Qtd: {p.quantidade}</p>
                       <p className="text-sm text-green-600">Total: R$ {valorTotalItem.toFixed(2)}</p>
                     </div>
                   </div>
@@ -368,30 +366,29 @@ export default function Dashboard() {
             })}
           </ul>
         ) : (
-          <p className="text-gray-500 font-poppins text-center">Nenhum produto encontrado.</p>
+          <p className="text-gray-500 text-center">Nenhum produto encontrado.</p>
         )}
-        <div className="flex justify-center mt-6 space-x-3">
-          <button
-            disabled={page <= 1}
-            onClick={() => setPage((p) => Math.max(p - 1, 1))}
-            className="px-4 py-2 bg-blue-600 text-white font-poppins rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
-          >
-            Anterior
-          </button>
-          <span className="px-4 py-2 bg-gray-200 font-poppins rounded-md text-gray-700">Página {page} de {totalPages}</span>
-          <button
-            disabled={page >= totalPages}
-            onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-            className="px-4 py-2 bg-blue-600 text-white font-poppins rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
-          >
-            Próxima
-          </button>
-        </div>
-      </div>
-      <div className="mt-8 flex justify-center">
-        <Link href="/" className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium font-poppins rounded-md hover:bg-blue-700 transition-colors duration-200 shadow-md">
-          Voltar a Home
-        </Link>
+        
+        {/* PAGINAÇÃO - SUA ESTRUTURA */}
+        {totalPages > 1 && (
+          <div className="flex justify-center mt-6 space-x-3">
+            <button
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(p - 1, 1))}
+              className="px-4 py-2 bg-[#394189] text-white font-semibold rounded-md hover:bg-[#c33638] disabled:opacity-50 transition-colors"
+            >
+              Anterior
+            </button>
+            <span className="px-4 py-2 bg-gray-200 font-semibold rounded-md text-gray-700">Página {page} de {totalPages}</span>
+            <button
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+              className="px-4 py-2 bg-[#394189] text-white font-semibold rounded-md hover:bg-[#c33638] disabled:opacity-50 transition-colors"
+            >
+              Próxima
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

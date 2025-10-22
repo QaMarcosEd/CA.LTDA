@@ -106,3 +106,18 @@ model TaxaCartao {
   taxaPercentual Float   // Ex.: 1.99 para 1,99%
   @@unique([bandeira, modalidade]) // Evita duplicatas
 }
+
+enum Role {
+  ADMIN
+  FUNCIONARIO
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  password  String
+  role      Role     @default(FUNCIONARIO)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

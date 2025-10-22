@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Package, Zap, TrendingUp, CreditCard, User, ShoppingCart, Plus } from 'lucide-react';
 import ModalRegistroBaixa from '../../components/ui/modals/ModalRegistroBaixa';
 import ConfirmDeleteModal from '../../components/ui/modals/ConfirmDeleteModal';
 import ModalCadastroLoteCalçados from '../../components/ui/modals/ModalCadastroLoteCalcados';
@@ -13,7 +14,7 @@ export default function Estoque() {
   const [produtos, setProdutos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [loteModalOpen, setLoteModalOpen] = useState(false); // Novo estado para modal de lote
+  const [loteModalOpen, setLoteModalOpen] = useState(false);
   const [selectedProduto, setSelectedProduto] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedDeleteProduto, setSelectedDeleteProduto] = useState(null);
@@ -28,25 +29,40 @@ export default function Estoque() {
 
   const fetchProdutos = async (filtros = {}, pg = 1) => {
     setLoading(true);
-    const query = new URLSearchParams();
-    if (filtros.marca) query.append('marca', filtros.marca);
-    if (filtros.tamanho) query.append('tamanho', filtros.tamanho);
-    if (filtros.referencia) query.append('referencia', filtros.referencia);
-    query.append('page', pg);
+    try {
+      const query = new URLSearchParams();
+      if (filtros.marca) query.append('marca', filtros.marca);
+      if (filtros.tamanho) query.append('tamanho', filtros.tamanho);
+      if (filtros.referencia) query.append('referencia', filtros.referencia);
+      query.append('page', pg.toString());
 
-    const res = await fetch(`/api/produtos?${query.toString()}`);
-    const data = await res.json();
-    setProdutos(data.data || []);
-    setTotalPages(data.totalPages || 1);
-    setLoading(false);
+      const res = await fetch(`/api/produtos?${query.toString()}`);
+      if (!res.ok) {
+        throw new Error(`Erro ao buscar produtos: ${res.status}`);
+      }
+      const data = await res.json();
+      setProdutos(data.data || []);
+      setTotalPages(data.totalPages || 1);
+    } catch (error) {
+      console.error('Erro no fetchProdutos:', error);
+      toast.error('Erro ao carregar produtos. Verifique o console para detalhes.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    fetchProdutos({}, page);
+    fetchProdutos(
+      {
+        marca: marcaFiltro,
+        tamanho: tamanhoFiltro,
+        referencia: referenciaFiltro,
+      },
+      page
+    );
   }, [page]);
 
   const aplicarFiltro = () => {
-    setPage(1);
     fetchProdutos(
       {
         marca: marcaFiltro,
@@ -55,6 +71,7 @@ export default function Estoque() {
       },
       1
     );
+    setPage(1);
   };
 
   const handleDelete = async (id) => {
@@ -126,187 +143,242 @@ export default function Estoque() {
     return { status: response.status, data: result };
   };
 
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 p-6">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-500 border-solid"></div>
-        <span className="ml-3 text-gray-600 font-poppins">Carregando estoque...</span>
+  // LOADING STATE
+  if (loading) return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 space-y-4 p-4">
+      <div className="w-64 h-4 bg-gray-300 animate-pulse rounded"></div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-4xl">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="w-full h-16 bg-gray-300 animate-pulse rounded"></div>
+        ))}
       </div>
-    );
-  }
-  return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <PageHeader title="Estoque" greeting="Bom dia! Visão Geral do Estoque" />
+    </div>
+  );
 
-      <div className="max-w-7xl mx-auto">
-        {/* Filtros */}
-        <div className="mb-8 bg-white p-4 rounded-lg shadow-md">
-          <h2 className="text-lg font-semibold font-poppins text-gray-700 mb-4">Filtros</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-gray-700">
+  return (
+    <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
+      <PageHeader title="Estoque" greeting="👟 Gerenciamento Completo - Calçados Araújo" />
+
+      <div className="max-w-7xl mx-auto w-full">
+
+        {/* ✅ CARDS MENOR - h-20 → h-16 + ÍCONE MENOR */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+          {[
+            { icon: Package, label: 'Total', value: produtos.length.toLocaleString('pt-BR'), color: '#394189' },
+            { icon: Zap, label: 'Estoque', value: produtos.filter(p => p.disponivel).length, color: '#10B981' },
+            { icon: TrendingUp, label: 'Esgotados', value: produtos.filter(p => !p.disponivel).length, color: '#F59E0B' },
+            { icon: CreditCard, label: 'Páginas', value: totalPages, color: '#c33638' },
+          ].map((card, i) => (
+            <div 
+              key={i}
+              className="group relative bg-white rounded-xl p-3 shadow-md border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden h-16 flex items-center justify-between"
+            >
+              <div className="absolute left-0 top-0 h-full w-0.5" style={{ backgroundColor: card.color }}></div>
+              
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-white to-gray-50 flex items-center justify-center shadow-sm border border-gray-100">
+                <card.icon className="w-4 h-4" style={{ color: card.color }} />
+              </div>
+              
+              <div className="flex-1 ml-2 pr-1">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-0.5">{card.label}</p>
+                <p className="text-sm font-bold text-gray-900 truncate">{card.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* FILTROS - RESPONSIVO */}
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md border border-gray-200 mb-6">
+          <h2 className="text-lg sm:text-xl font-semibold text-[#394189] mb-4 flex items-center gap-2">
+            <Zap className="w-5 h-5" />
+            Filtros Rápidos
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <input
-              placeholder="Marca"
+              placeholder="🔍 Marca"
               value={marcaFiltro}
               onChange={(e) => setMarcaFiltro(e.target.value)}
-              className="border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
+              className="border border-[#394189]/20 rounded-lg p-3 focus:ring-2 focus:ring-[#394189] bg-white text-gray-500 placeholder-gray-400"
             />
             <input
-              placeholder="Numeração"
+              placeholder="📏 Numeração"
               type="number"
               value={tamanhoFiltro}
               onChange={(e) => setTamanhoFiltro(e.target.value)}
-              className="border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
+              className="border border-[#394189]/20 rounded-lg p-3 focus:ring-2 focus:ring-[#394189] bg-white text-gray-500 placeholder-gray-400"
             />
             <input
-              placeholder="Referência"
+              placeholder="📋 Referência"
               value={referenciaFiltro}
               onChange={(e) => setReferenciaFiltro(e.target.value)}
-              className="border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
+              className="border border-[#394189]/20 rounded-lg p-3 focus:ring-2 focus:ring-[#394189] bg-white text-gray-500 placeholder-gray-400"
             />
             <button
               onClick={aplicarFiltro}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-poppins text-sm font-medium"
+              className="bg-gradient-to-r from-[#394189] to-[#c33638] text-white font-semibold rounded-lg p-3 hover:from-[#c33638] hover:to-[#394189] transition-all flex items-center justify-center"
             >
-              Filtrar
+              🔍 Filtrar
             </button>
           </div>
         </div>
 
-        {/* Ações */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-8">
-          <button
-            onClick={() => setLoteModalOpen(true)}
-            className="inline-flex items-center justify-center bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-poppins text-sm font-medium"
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0v10a2 2 0 01-2 2H6a2 2 0 01-2-2V7m16 0l-8 4-8-4" />
-            </svg>
-            Adicionar Lote
-          </button>
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center justify-center bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors font-poppins text-sm font-medium"
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            Ver Dashboard
-          </Link>
-          <Link
-            href="/vendas"
-            className="inline-flex items-center justify-center bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors font-poppins text-sm font-medium"
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            Ver Vendas
-          </Link>
-          <Link
-            href="/clientes"
-            className="inline-flex items-center justify-center bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors font-poppins text-sm font-medium"
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            Ver Clientes
-          </Link>
-        </div>
+{/* AÇÕES - MENOR E RESPONSIVO */}
+<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 mb-6">
+  <button
+    onClick={() => setLoteModalOpen(true)}
+    className="group relative bg-green-500 text-white rounded-xl p-4 shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col items-center justify-center cursor-pointer"
+  >
+    <Plus className="w-6 h-6 mb-1" />
+    <span className="text-sm font-semibold">Adicionar</span>
+  </button>
 
-        {/* Tabela de produtos */}
-        <div className="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead className="bg-gray-100 sticky top-0">
-              <tr>
-                <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Nome</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Tamanho</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Referência</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Cor</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Quantidade</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Preço</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Gênero</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Modelo</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Marca</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Lote</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Status</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {produtos.map((p) => (
-                <tr key={p.id} className="border-b hover:bg-gray-50">
-                  <td className="py-3 px-4 text-sm font-poppins text-gray-800">{p.nome}</td>
-                  <td className="py-3 px-4 text-sm font-poppins text-gray-800">{p.tamanho}</td>
-                  <td className="py-3 px-4 text-sm font-poppins text-gray-800">{p.referencia || 'N/A'}</td>
-                  <td className="py-3 px-4 text-sm font-poppins text-gray-800">{p.cor}</td>
-                  <td className="py-3 px-4 text-sm font-poppins text-gray-800">{p.quantidade}</td>
-                  <td className="py-3 px-4 text-sm font-poppins text-gray-800">R$ {p.precoVenda.toFixed(2)}</td>
-                  <td className="py-3 px-4 text-sm font-poppins text-gray-800">{p.genero || 'N/A'}</td>
-                  <td className="py-3 px-4 text-sm font-poppins text-gray-800">{p.modelo || 'N/A'}</td>
-                  <td className="py-3 px-4 text-sm font-poppins text-gray-800">{p.marca || 'N/A'}</td>
-                  <td className="py-3 px-4 text-sm font-poppins text-gray-800">{p.lote || 'N/A'}</td>
-                  <td className="py-3 px-4 text-sm font-poppins text-gray-800">
-                    <span
-                      className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                        p.disponivel ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}
-                    >
-                      {p.disponivel ? 'Disponível' : 'Esgotado'}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 flex flex-wrap gap-2">
-                    <button
-                      onClick={() => {
-                        setSelectedEditId(p.id);
-                        setEditModalOpen(true);
-                      }}
-                      className="text-green-600 hover:text-green-800 font-poppins text-sm font-medium"
-                    >
-                      Editar
-                    </button>
-                    <button
-                      onClick={() => handleOpenDeleteModal(p)}
-                      className="text-red-600 hover:text-red-800 font-poppins text-sm font-medium"
-                    >
-                      Deletar
-                    </button>
-                    <button
-                      onClick={() => handleOpenModal(p)}
-                      className="text-blue-600 hover:text-blue-800 font-poppins text-sm font-medium"
-                    >
-                      Dar Baixa
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {produtos.length === 0 && (
-            <p className="text-center text-gray-500 font-poppins text-sm mt-4">Nenhum produto encontrado.</p>
+  <Link
+    href="/dashboard"
+    className="group relative bg-white rounded-xl p-4 shadow-md border border-gray-200 hover:bg-[#394189]/10 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col items-center justify-center cursor-pointer"
+  >
+    <TrendingUp className="w-6 h-6 text-[#394189] mb-1 group-hover:text-[#394189]/80" />
+    <span className="text-sm font-semibold text-gray-900 group-hover:text-[#394189]">Dashboard</span>
+  </Link>
+
+  <Link
+    href="/vendas"
+    className="group relative bg-white rounded-xl p-4 shadow-md border border-gray-200 hover:bg-[#c33638]/10 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col items-center justify-center cursor-pointer"
+  >
+    <ShoppingCart className="w-6 h-6 text-[#c33638] mb-1 group-hover:text-[#c33638]/80" />
+    <span className="text-sm font-semibold text-gray-900 group-hover:text-[#c33638]">Vendas</span>
+  </Link>
+
+  <Link
+    href="/clientes"
+    className="group relative bg-white rounded-xl p-4 shadow-md border border-gray-200 hover:bg-[#8B5CF6]/10 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col items-center justify-center cursor-pointer"
+  >
+    <User className="w-6 h-6 text-[#8B5CF6] mb-1 group-hover:text-[#8B5CF6]/80" />
+    <span className="text-sm font-semibold text-gray-900 group-hover:text-[#8B5CF6]">Clientes</span>
+  </Link>
+</div>
+
+        {/* TABELA RESPONSIVA 100% */}
+        <div className="bg-white rounded-xl p-4 sm:p-6 shadow-md border border-gray-200 mb-6 overflow-hidden">
+          <h2 className="text-lg sm:text-xl font-semibold text-[#394189] mb-4 flex items-center gap-2">
+            <Package className="w-5 h-5 sm:w-6 sm:h-6" />
+            Lista Completa de Produtos
+          </h2>
+          
+          {produtos.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 w-full table-auto">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-2 sm:px-3 lg:px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nome</th>
+                    <th className="px-1 sm:px-2 lg:px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden sm:table-cell">Tamanho</th>
+                    <th className="px-1 sm:px-2 lg:px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden md:table-cell">Ref.</th>
+                    <th className="px-1 sm:px-2 lg:px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden lg:table-cell">Cor</th>
+                    <th className="px-1 sm:px-2 lg:px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Qtd</th>
+                    <th className="px-1 sm:px-2 lg:px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Preço</th>
+                    <th className="px-1 sm:px-2 lg:px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden sm:table-cell">Gênero</th>
+                    <th className="px-1 sm:px-2 lg:px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden md:table-cell">Marca</th>
+                    <th className="px-1 sm:px-2 lg:px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                    <th className="px-1 sm:px-2 lg:px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {produtos.map((p) => (
+                    <tr key={p.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-2 sm:px-3 lg:px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {p.nome}
+                      </td>
+                      <td className="px-1 sm:px-2 lg:px-4 py-3 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">
+                        {p.tamanho}
+                      </td>
+                      <td className="px-1 sm:px-2 lg:px-4 py-3 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">
+                        {p.referencia || 'N/A'}
+                      </td>
+                      <td className="px-1 sm:px-2 lg:px-4 py-3 whitespace-nowrap hidden lg:table-cell">
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                          {p.cor}
+                        </span>
+                      </td>
+                      <td className="px-1 sm:px-2 lg:px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-900">
+                        {p.quantidade}
+                      </td>
+                      <td className="px-1 sm:px-2 lg:px-4 py-3 whitespace-nowrap text-sm font-semibold text-[#c33638]">
+                        R$ {p.precoVenda?.toFixed(2)}
+                      </td>
+                      <td className="px-1 sm:px-2 lg:px-4 py-3 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">
+                        {p.genero}
+                      </td>
+                      <td className="px-1 sm:px-2 lg:px-4 py-3 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">
+                        {p.marca}
+                      </td>
+                      <td className="px-1 sm:px-2 lg:px-4 py-3 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          p.disponivel 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {p.disponivel ? '✅' : '❌'}
+                        </span>
+                      </td>
+                      <td className="px-1 sm:px-2 lg:px-4 py-3 whitespace-nowrap text-sm font-medium space-x-1">
+                        <button
+                          onClick={() => {
+                            setSelectedEditId(p.id);
+                            setEditModalOpen(true);
+                          }}
+                          className="text-[#10B981] hover:text-green-700 font-medium transition-colors"
+                          title="Editar"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => handleOpenDeleteModal(p)}
+                          className="text-[#c33638] hover:text-red-700 font-medium transition-colors"
+                          title="Deletar"
+                        >
+                          🗑️
+                        </button>
+                        <button
+                          onClick={() => handleOpenModal(p)}
+                          className="text-[#394189] hover:text-blue-700 font-medium transition-colors"
+                          title="Baixa"
+                        >
+                          📦
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-center text-gray-500 py-12">Nenhum produto encontrado. 😔</p>
           )}
         </div>
 
-        {/* Paginação */}
-        <div className="mt-6 flex justify-center gap-3">
-          <button
-            disabled={page <= 1}
-            onClick={() => setPage(page - 1)}
-            className="px-4 py-2 bg-blue-600 text-white font-poppins text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-          >
-            Anterior
-          </button>
-          <span className="px-4 py-2 bg-gray-200 font-poppins text-sm text-gray-700 rounded-lg">
-            Página {page} de {totalPages}
-          </span>
-          <button
-            disabled={page >= totalPages}
-            onClick={() => setPage(page + 1)}
-            className="px-4 py-2 bg-blue-600 text-white font-poppins text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-          >
-            Próximo
-          </button>
-        </div>
+        {/* PAGINAÇÃO */}
+        {totalPages > 1 && (
+          <div className="flex justify-center mt-6 space-x-3">
+            <button
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(p - 1, 1))}
+              className="px-4 py-2 bg-[#394189] text-white font-semibold rounded-md hover:bg-[#c33638] disabled:opacity-50 transition-colors"
+            >
+              Anterior
+            </button>
+            <span className="px-4 py-2 bg-gray-200 font-semibold rounded-md text-gray-700">
+              Página {page} de {totalPages}
+            </span>
+            <button
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+              className="px-4 py-2 bg-[#394189] text-white font-semibold rounded-md hover:bg-[#c33638] disabled:opacity-50 transition-colors"
+            >
+              Próxima
+            </button>
+          </div>
+        )}
 
-        {/* Modal de venda */}
+        {/* MODAIS */}
         <ModalRegistroBaixa
           isOpen={modalOpen}
           onClose={handleCloseModal}
@@ -314,7 +386,6 @@ export default function Estoque() {
           onSubmit={handleSubmitVenda}
         />
 
-        {/* Modal de confirmação de delete */}
         <ConfirmDeleteModal
           isOpen={deleteModalOpen}
           onClose={handleCloseDeleteModal}

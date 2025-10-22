@@ -1,10 +1,10 @@
-// // app/clientes/page.js
 'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { formatPhoneNumber } from '../../../utils/formatPhoneNumber';
+import { Users, User, Phone, Calendar, DollarSign, ShoppingBag, Edit, Eye } from 'lucide-react';
 import PageHeader from '@/components/Header';
 
 export default function Clientes() {
@@ -47,38 +47,37 @@ export default function Clientes() {
     setEditModalOpen(true);
   };
 
-      const handleSubmitEdit = async (e) => {
-        e.preventDefault();
-        if (!editForm.nome) {
-          toast.error('Nome é obrigatório');
-          return;
-        }
+  const handleSubmitEdit = async (e) => {
+    e.preventDefault();
+    if (!editForm.nome) {
+      toast.error('Nome é obrigatório');
+      return;
+    }
 
+    try {
+      const res = await fetch(`/api/clientes/${selectedCliente.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm),
+      });
+
+      if (!res.ok) {
+        let errorMsg = 'Erro ao editar cliente';
         try {
-          const res = await fetch(`/api/clientes/${selectedCliente.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(editForm),
-          });
+          const errorData = await res.json();
+          errorMsg = errorData.error || errorMsg;
+        } catch {}
+        toast.error(errorMsg);
+        return;
+      }
 
-          if (!res.ok) {
-            let errorMsg = 'Erro ao editar cliente';
-            try {
-              const errorData = await res.json();
-              errorMsg = errorData.error || errorMsg;
-            } catch {}
-            toast.error(errorMsg);
-            return;
-          }
-
-          const updated = await res.json(); // Opcional: use se quiser
-          toast.success('Cliente atualizado com sucesso!');
-          setEditModalOpen(false);
-          fetchClientes();
-        } catch (error) {
-          toast.error(`Erro inesperado: ${error.message}`);
-        }
-      };
+      toast.success('Cliente atualizado com sucesso!');
+      setEditModalOpen(false);
+      fetchClientes();
+    } catch (error) {
+      toast.error(`Erro inesperado: ${error.message}`);
+    }
+  };
 
   const handleCloseEditModal = () => {
     setEditModalOpen(false);
@@ -93,156 +92,175 @@ export default function Clientes() {
     return diasDesdeUltima > 90;
   };
 
-    if (loading) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 p-6">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-500 border-solid"></div>
-        <span className="ml-3 text-gray-600 font-poppins">Carregando clientes...</span>
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="bg-white rounded-2xl p-8 shadow-xl flex items-center gap-4">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#394189] border-t-transparent"></div>
+          <span className="text-lg font-semibold text-[#394189]">Carregando clientes...</span>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-        <PageHeader title="Clientes" greeting="Bom dia! Visão Geral do Clientes" />
+      <PageHeader title="Clientes" greeting="👥 Visão Geral - Calçados Araújo" />
 
       <div className="max-w-7xl mx-auto">
-        {/* Resumo no topo */}
-        <div className="bg-blue-50 p-4 rounded-lg shadow-md mb-6 grid grid-cols-1 sm:grid-cols-4 gap-4 text-center">
-          <div>
-            <p className="text-sm font-medium text-gray-700">Total Clientes</p>
-            <p className="text-xl font-bold text-blue-600">{totalClientes}</p>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-gray-700">Valor Total Vendido</p>
-            <p className="text-xl font-bold text-blue-600">{valorTotalGeral.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-gray-700">Média por Cliente</p>
-            <p className="text-xl font-bold text-blue-600">{mediaGasto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-gray-700">Unidades Totais Vendidas</p>
-            <p className="text-xl font-bold text-blue-600">{qtyItensGeral}</p>
-          </div>
+        {/* RESUMO CARDS HARMONIOSOS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+          {[
+            { icon: Users, label: 'Total Clientes', value: totalClientes, color: '#394189' },
+            { icon: DollarSign, label: 'Valor Total', value: valorTotalGeral.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), color: '#c33638' },
+            { icon: ShoppingBag, label: 'Média/Cliente', value: mediaGasto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), color: '#10B981' },
+            { icon: Users, label: 'Unidades Vendidas', value: qtyItensGeral, color: '#8B5CF6' },
+          ].map((card, i) => (
+            <div key={i} className="group relative bg-white rounded-xl p-4 shadow-md border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 h-24 flex items-center justify-between">
+              <div className="absolute left-0 top-0 h-full w-0.5" style={{ backgroundColor: card.color }}></div>
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-white to-gray-50 flex items-center justify-center shadow-sm">
+                <card.icon className="w-5 h-5" style={{ color: card.color }} />
+              </div>
+              <div className="flex-1 ml-3 pr-2">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">{card.label}</p>
+                <p className="text-lg font-bold text-gray-900 truncate">{card.value}</p>
+              </div>
+            </div>
+          ))}
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Nome</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Apelido</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Telefone</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Nº Compras</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Criado em</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Última Compra</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Total Gasto</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Unidades Compradas</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold font-poppins text-gray-700">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {clientes.map((c) => (
-                <tr key={c.id} className={`border-b hover:bg-gray-50 ${isInativo(c.ultimaCompraAgregada) ? 'bg-red-50' : ''}`}>
-                  <td className="py-3 px-4 text-sm font-poppins text-gray-800">{c.nome}</td>
-                  <td className="py-3 px-4 text-sm font-poppins text-gray-800">{c.apelido || 'N/A'}</td>
-                  <td className="py-3 px-4 text-sm font-poppins text-gray-800">{c.telefone || 'N/A'}</td>
-                  <td className="py-3 px-4 text-sm font-poppins text-gray-800">{c._count.vendas}</td>
-                  <td className="py-3 px-4 text-sm font-poppins text-gray-800">
-                    {new Date(c.criadoEm).toLocaleDateString('pt-BR')}
-                  </td>
-                  <td className="py-3 px-4 text-sm font-poppins text-gray-800">
-                    {c.ultimaCompraAgregada ? new Date(c.ultimaCompraAgregada).toLocaleDateString('pt-BR') : 'N/A'}
-                  </td>
-                  <td className="py-3 px-4 text-sm font-poppins text-gray-800">
-                    {(c.totalGasto || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </td>
-                  <td className="py-3 px-4 text-sm font-poppins text-gray-800">{c.qtyItensTotal || 0}</td>
-                  <td className="py-3 px-4 text-sm font-poppins text-gray-800">
-                    <button
-                      onClick={() => handleEdit(c)}
-                      className="text-blue-600 hover:text-blue-800 mr-2 font-medium"
-                    >
-                      Editar
-                    </button>
-                    <Link
-                      href={`/clientes/${c.id}`}
-                      className="text-green-600 hover:text-green-800 font-medium"
-                    >
-                      Detalhes
-                    </Link>
-                  </td>
+        {/* TABELA MODERNA */}
+        <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 overflow-hidden mb-8">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gradient-to-r from-[#394189]/5 to-[#c33638]/5">
+                  {[
+                    { label: 'Nome', icon: User },
+                    { label: 'Apelido' },
+                    { label: 'Telefone', icon: Phone },
+                    { label: 'Compras' },
+                    { label: 'Criado', icon: Calendar },
+                    { label: 'Última' },
+                    { label: 'Total', icon: DollarSign },
+                    { label: 'Unidades' },
+                    { label: 'Ações' },
+                  ].map((header, i) => (
+                    <th key={i} className="py-4 px-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      {header.icon && <header.icon className="w-4 h-4 inline mr-1" />}
+                      {header.label}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {clientes.map((c) => {
+                  const inativo = isInativo(c.ultimaCompraAgregada);
+                  return (
+                    <tr key={c.id} className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${inativo ? 'bg-red-50/50' : ''}`}>
+                      <td className="py-4 px-4">
+                        <div className="font-medium text-gray-900 flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${inativo ? 'bg-red-400' : 'bg-green-400'}`}></div>
+                          {c.nome}
+                        </div>
+                      </td>
+                      <td className="py-4 px-4 text-sm text-gray-600">{c.apelido || 'N/A'}</td>
+                      <td className="py-4 px-4 text-sm text-gray-600">{formatPhoneNumber(c.telefone || 'N/A')}</td>
+                      <td className="py-4 px-4 text-sm font-medium text-[#394189]">{c._count.vendas}</td>
+                      <td className="py-4 px-4 text-sm text-gray-500">{new Date(c.criadoEm).toLocaleDateString('pt-BR')}</td>
+                      <td className={`py-4 px-4 text-sm ${inativo ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+                        {c.ultimaCompraAgregada ? new Date(c.ultimaCompraAgregada).toLocaleDateString('pt-BR') : 'N/A'}
+                      </td>
+                      <td className="py-4 px-4 text-sm font-semibold text-[#c33638]">
+                        {(c.totalGasto || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </td>
+                      <td className="py-4 px-4 text-sm font-medium text-[#10B981]">{c.qtyItensTotal || 0}</td>
+                      <td className="py-4 px-4">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEdit(c)}
+                            className="p-2 text-[#394189] hover:bg-[#394189]/10 rounded-lg transition-colors"
+                            title="Editar"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <Link href={`/clientes/${c.id}`} className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors">
+                            <Eye className="w-4 h-4" />
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
           {clientes.length === 0 && (
-            <p className="text-center text-gray-500 font-poppins text-sm mt-4">Nenhum cliente encontrado.</p>
+            <div className="text-center py-12">
+              <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 font-medium">Nenhum cliente encontrado</p>
+            </div>
           )}
         </div>
 
-        <div className="mt-8 flex justify-center">
-          <Link href="/" className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium font-poppins rounded-md hover:bg-blue-700 transition-colors duration-200 shadow-md">
-            Voltar a Home
-          </Link>
-        </div>
-
+        {/* MODAL PREMIUM */}
         {editModalOpen && selectedCliente && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-              <h2 className="text-xl font-bold font-poppins text-gray-900 mb-4">
-                Editar Cliente: {selectedCliente.nome}
-              </h2>
-              <form onSubmit={handleSubmitEdit}>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium font-poppins text-gray-700">
-                    Nome
-                  </label>
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-[#394189] flex items-center gap-2">
+                  <Edit className="w-5 h-5" />
+                  Editar Cliente
+                </h2>
+                <button onClick={handleCloseEditModal} className="text-gray-400 hover:text-gray-600">
+                  ✕
+                </button>
+              </div>
+              
+              <form onSubmit={handleSubmitEdit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Nome *</label>
                   <input
                     type="text"
                     value={editForm.nome}
                     onChange={(e) => setEditForm({ ...editForm, nome: e.target.value })}
-                    className="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
+                    className="w-full border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-[#394189] focus:border-transparent"
                     required
                   />
                 </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium font-poppins text-gray-700">
-                    Apelido
-                  </label>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Apelido</label>
                   <input
                     type="text"
                     value={editForm.apelido}
                     onChange={(e) => setEditForm({ ...editForm, apelido: e.target.value })}
-                    className="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
+                    className="w-full border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-[#394189] focus:border-transparent"
                   />
                 </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium font-poppins text-gray-700">
-                    Telefone
-                  </label>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Telefone</label>
                   <input
                     type="text"
                     value={editForm.telefone}
                     onChange={(e) => setEditForm({ ...editForm, telefone: formatPhoneNumber(e.target.value) })}
                     placeholder="(11) 99999-9999"
-                    className="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-poppins text-sm"
+                    className="w-full border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-[#394189] focus:border-transparent"
                   />
                 </div>
-                <div className="flex justify-end gap-2">
+                
+                <div className="flex justify-end gap-3 pt-4">
                   <button
                     type="button"
                     onClick={handleCloseEditModal}
-                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-poppins text-sm"
+                    className="px-6 py-2 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-poppins text-sm"
+                    className="px-6 py-2 bg-gradient-to-r from-[#394189] to-[#c33638] text-white rounded-xl hover:shadow-lg transition-all"
                   >
-                    Salvar
+                    Salvar Alterações
                   </button>
                 </div>
               </form>
@@ -253,4 +271,3 @@ export default function Clientes() {
     </div>
   );
 }
-

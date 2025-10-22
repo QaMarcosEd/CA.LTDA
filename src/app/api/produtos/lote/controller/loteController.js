@@ -56,6 +56,7 @@ export async function createLote(data) {
               marca: data.genericos.marca,
               lote,
               dataRecebimento,
+              imagem: data.genericos.imagem, // ← ADICIONE ESTA LINHA!
               disponivel: quantidade > 0,
             },
           });

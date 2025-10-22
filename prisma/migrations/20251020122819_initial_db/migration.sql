@@ -78,8 +78,21 @@ CREATE TABLE "TaxaCartao" (
     "taxaPercentual" REAL NOT NULL
 );
 
+-- CreateTable
+CREATE TABLE "User" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "name" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "role" TEXT NOT NULL DEFAULT 'FUNCIONARIO',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Cliente_nome_key" ON "Cliente"("nome");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "TaxaCartao_bandeira_modalidade_key" ON "TaxaCartao"("bandeira", "modalidade");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_name_key" ON "User"("name");

@@ -1,20 +1,172 @@
 // app/api/produtos/controller/produtosController.js
 import { prisma } from '../../../lib/prisma'; // Singleton central
 
+// export async function getAllProdutos({ marca, modelo, genero, tamanho, referencia, tipo, page = 1, limit = 10 }) {
+//   try {
+//     const where = {};
+    
+//     // Filtros com tratamento de erros e case-insensitive
+//     if (marca && marca.trim()) {
+//       where.marca = { contains: marca.trim(), mode: 'insensitive' };
+//     }
+//     if (modelo && modelo.trim()) {
+//       where.modelo = { contains: modelo.trim(), mode: 'insensitive' };
+//     }
+//     if (genero && genero.trim()) {
+//       where.genero = { contains: genero.trim(), mode: 'insensitive' };
+//     }
+//     if (tamanho) {
+//       const numTamanho = parseInt(tamanho);
+//       if (!isNaN(numTamanho)) {
+//         where.tamanho = { equals: numTamanho };
+//       }
+//     }
+//     if (referencia && referencia.trim()) {
+//       where.referencia = { contains: referencia.trim(), mode: 'insensitive' };
+//     }
+
+//     // Debug: log dos filtros aplicados
+//     console.log('Filtros aplicados:', { marca, tamanho, referencia, where });
+
+//     page = parseInt(page) || 1;
+//     limit = parseInt(limit) || 10;
+    
+//     if (page < 1) page = 1;
+//     if (limit < 1) limit = 10;
+
+//     // Agregações para dashboards
+//     if (tipo && ['genero', 'modelo', 'marca'].includes(tipo)) {
+//       const contagem = await prisma.produto.groupBy({
+//         by: [tipo],
+//         _sum: { quantidade: true },
+//         where,
+//       });
+//       return contagem.map((item) => ({
+//         [tipo]: item[tipo] || 'Desconhecido',
+//         total: item._sum.quantidade || 0,
+//       }));
+//     }
+
+//     // Queries otimizadas em paralelo
+//     const [totalCount, totalAggregate, produtosParaCalc, produtos] = await Promise.all([
+//       // 1. Contagem total para paginação
+//       prisma.produto.count({ where }),
+      
+//       // 2. Soma total de quantidade
+//       prisma.produto.aggregate({
+//         where,
+//         _sum: { quantidade: true },
+//       }),
+      
+//       // 3. Produtos só para cálculo financeiro (otimizado)
+//       prisma.produto.findMany({
+//         where,
+//         select: { 
+//           precoVenda: true, 
+//           quantidade: true, 
+//           precoCusto: true 
+//         },
+//       }),
+      
+//       // 4. Produtos paginados com todos os campos
+//       prisma.produto.findMany({
+//         where,
+//         skip: (page - 1) * limit,
+//         take: limit,
+//         orderBy: { id: 'desc' },
+//         select: {
+//           id: true,
+//           nome: true,
+//           tamanho: true,
+//           referencia: true,
+//           cor: true,
+//           quantidade: true,
+//           precoVenda: true,
+//           precoCusto: true,
+//           genero: true,
+//           modelo: true,
+//           marca: true,
+//           disponivel: true,
+//           lote: true,
+//           dataRecebimento: true,
+//           imagem: true,
+//         },
+//       }),
+//     ]);
+
+//     // Cálculos financeiros
+//     const valorTotalRevenda = produtosParaCalc.reduce(
+//       (sum, p) => sum + (parseFloat(p.precoVenda || 0) * parseInt(p.quantidade || 0)), 
+//       0
+//     );
+//     const custoTotalEstoque = produtosParaCalc.reduce(
+//       (sum, p) => sum + (parseFloat(p.precoCusto || 0) * parseInt(p.quantidade || 0)), 
+//       0
+//     );
+//     const lucroProjetado = valorTotalRevenda - custoTotalEstoque;
+//     const margemLucro = custoTotalEstoque > 0 
+//       ? ((lucroProjetado / custoTotalEstoque) * 100).toFixed(2) 
+//       : 0;
+
+//     const totalPages = Math.ceil(totalCount / limit);
+
+//     console.log(`Resultados: ${produtos.length} produtos na página ${page}/${totalPages}`);
+
+//     return {
+//       data: produtos,
+//       totalPages,
+//       currentPage: page,
+//       totalCount,
+//       totalProdutos: totalAggregate._sum?.quantidade || 0,
+//       valorTotalRevenda: valorTotalRevenda.toFixed(2),
+//       custoTotalEstoque: custoTotalEstoque.toFixed(2),
+//       lucroProjetado: lucroProjetado.toFixed(2),
+//       margemLucro: `${margemLucro}%`,
+//     };
+
+//   } catch (error) {
+//     console.error('Erro completo no getAllProdutos:', error);
+//     throw new Error(`Erro ao buscar produtos: ${error.message}`);
+//   }
+// }
 export async function getAllProdutos({ marca, modelo, genero, tamanho, referencia, tipo, page = 1, limit = 10 }) {
   try {
     const where = {};
-    if (marca) where.marca = { contains: marca, mode: 'insensitive' }; // Case insensitive
-    if (modelo) where.modelo = { contains: modelo, mode: 'insensitive' };
-    if (genero) where.genero = { contains: genero, mode: 'insensitive' };
-    if (tamanho) where.tamanho = { equals: parseInt(tamanho) };
-    if (referencia) where.referencia = { contains: referencia, mode: 'insensitive' };
+    
+    // 1. MARCA - Case insensitive SEM 'mode'
+    if (marca && marca.trim()) {
+      const marcaLower = marca.trim().toLowerCase();
+      where.marca = { 
+        contains: marcaLower 
+      };
+      console.log('Filtro MARCA:', marcaLower);
+    }
+    
+    // 2. REFERÊNCIA - Case insensitive SEM 'mode'
+    if (referencia && referencia.trim()) {
+      const refLower = referencia.trim().toLowerCase();
+      where.referencia = { 
+        contains: refLower 
+      };
+      console.log('Filtro REFERÊNCIA:', refLower);
+    }
+    
+    // 3. TAMANHO - Mantém funcionando
+    if (tamanho) {
+      const numTamanho = parseInt(tamanho);
+      if (!isNaN(numTamanho)) {
+        where.tamanho = { equals: numTamanho };
+        console.log('Filtro TAMANHO:', numTamanho);
+      }
+    }
 
     page = parseInt(page) || 1;
     limit = parseInt(limit) || 10;
-    if (page < 1 || limit < 1) throw new Error('Parâmetros de paginação inválidos');
+    
+    if (page < 1) page = 1;
+    if (limit < 1) limit = 10;
 
-    // Agregações pra dashboards
+    // Agregações para dashboards
     if (tipo && ['genero', 'modelo', 'marca'].includes(tipo)) {
       const contagem = await prisma.produto.groupBy({
         by: [tipo],
@@ -27,64 +179,69 @@ export async function getAllProdutos({ marca, modelo, genero, tamanho, referenci
       }));
     }
 
-    // Totals precisos (substitua TODO o Promise.all por isso)
+    // TESTE RÁPIDO: Busca SEM paginação
+    const todosFiltrados = await prisma.produto.findMany({
+      where,
+      select: { id: true, marca: true, referencia: true, tamanho: true }
+    });
+    console.log('TODOS FILTRADOS:', todosFiltrados.length, 'produtos');
+    console.log('Exemplos:', todosFiltrados.slice(0, 3));
+
+    // Queries principais
     const [totalCount, totalAggregate, produtosParaCalc, produtos] = await Promise.all([
-      prisma.produto.count({ where }), // Count real pra pages
-      prisma.produto.aggregate({
-        where,
-        _sum: { quantidade: true },
-      }),
-      // Nova query: Puxo só campos pra cálculo de revenda/custo (otimizado, sem dados extras)
+      prisma.produto.count({ where }),
+      prisma.produto.aggregate({ where, _sum: { quantidade: true } }),
       prisma.produto.findMany({
         where,
         select: { precoVenda: true, quantidade: true, precoCusto: true },
       }),
-      // Query paginada principal (mantém select completo)
       prisma.produto.findMany({
         where,
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { id: 'desc' },
         select: {
-          id: true,
-          nome: true,
-          tamanho: true,
-          referencia: true,
-          cor: true,
-          quantidade: true,
-          precoVenda: true,
-          precoCusto: true,
-          genero: true,
-          modelo: true,
-          marca: true,
-          disponivel: true,
-          lote: true,
-          dataRecebimento: true,
-          imagem: true,
+          id: true, nome: true, tamanho: true, referencia: true, cor: true,
+          quantidade: true, precoVenda: true, precoCusto: true, genero: true,
+          modelo: true, marca: true, disponivel: true, lote: true,
+          dataRecebimento: true, imagem: true,
         },
       }),
     ]);
 
-    // Cálculo em JS (seguro e simples)
-    const valorTotalRevenda = produtosParaCalc.reduce((sum, p) => sum + (parseFloat(p.precoVenda || 0) * parseInt(p.quantidade || 0)), 0);
-    const custoTotalEstoque = produtosParaCalc.reduce((sum, p) => sum + (parseFloat(p.precoCusto || 0) * parseInt(p.quantidade || 0)), 0);
+    // Cálculos
+    const valorTotalRevenda = produtosParaCalc.reduce(
+      (sum, p) => sum + (parseFloat(p.precoVenda || 0) * parseInt(p.quantidade || 0)), 0
+    );
+    const custoTotalEstoque = produtosParaCalc.reduce(
+      (sum, p) => sum + (parseFloat(p.precoCusto || 0) * parseInt(p.quantidade || 0)), 0
+    );
     const lucroProjetado = valorTotalRevenda - custoTotalEstoque;
-    const margemLucro = custoTotalEstoque > 0 ? ((lucroProjetado / custoTotalEstoque) * 100).toFixed(2) : 0;
+    const margemLucro = custoTotalEstoque > 0 
+      ? ((lucroProjetado / custoTotalEstoque) * 100).toFixed(2) : 0;
+
+    const totalPages = Math.ceil(totalCount / limit);
+
+    console.log(`✅ RESULTADO: ${produtos.length} produtos na página ${page}/${totalPages}`);
 
     return {
       data: produtos,
-      totalPages: Math.ceil(totalCount / limit),
-      totalProdutos: totalAggregate._sum.quantidade || 0,
+      totalPages,
+      currentPage: page,
+      totalCount,
+      totalProdutos: totalAggregate._sum?.quantidade || 0,
       valorTotalRevenda: valorTotalRevenda.toFixed(2),
       custoTotalEstoque: custoTotalEstoque.toFixed(2),
       lucroProjetado: lucroProjetado.toFixed(2),
       margemLucro: `${margemLucro}%`,
     };
+
   } catch (error) {
-    console.error('Erro no getAllProdutos:', error);
-    throw error;
+    console.error('💥 ERRO getAllProdutos:', error);
+    throw new Error(`Erro ao buscar produtos: ${error.message}`);
   }
 }
+
 
 export async function createProduto(data) { // Adicionado: Pra POST individual (similar a lote mas single)
   try {

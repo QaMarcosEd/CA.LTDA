@@ -90,9 +90,11 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 p-6">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-500 border-solid"></div>
-        <span className="ml-3 text-gray-600 font-poppins">Carregando dashboard...</span>
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="bg-white rounded-2xl p-8 shadow-xl flex items-center gap-4">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#394189] border-t-transparent"></div>
+          <span className="text-lg font-semibold text-[#394189]">Carregando home...</span>
+        </div>
       </div>
     );
   }
