@@ -25,3 +25,7 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+
+.login-page [data-sidebar] { display: none !important; }
+.login-page .md\:ml-64, .login-page .md\:ml-16 { margin-left: 0 !important; }

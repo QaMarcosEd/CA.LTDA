@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { formatPhoneNumber } from '../../../../utils/formatPhoneNumber';
+import { formatPhoneNumber } from '../../utils/formatPhoneNumber';
 import { format, subDays, parseISO } from 'date-fns';
 
 export default function ModalRegistroBaixa({ isOpen, onClose, produto, onSubmit, onSubmitRefresh }) {

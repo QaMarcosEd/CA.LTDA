@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { formatDateToBrazil } from '../../../../utils/formatDate';
-import { formatPhoneNumber } from '../../../../utils/formatPhoneNumber';
+import { formatDateToBrazil } from '../../../utils/formatDate';
+import { formatPhoneNumber } from '../../../utils/formatPhoneNumber';
 import toast from 'react-hot-toast';
 import { User, DollarSign, CreditCard, ShoppingBag, Calendar, Edit3, Eye, Users, MapPin, Phone as PhoneIcon } from 'lucide-react';
-import PageHeader from '@/components/Header';
+import PageHeader from '@/components/layout/Header';
 
 // Helper pra converter ISO date pra 'yyyy-MM-dd' pro input date
 const formatDateForInput = (isoDate) => {
@@ -176,7 +176,7 @@ export default function DetalhesCliente() {
   );
 
   return (
-    <div className="p-6 bg-gradient-to-br from-[#394189]/5 via-white to-[#c33638]/5 min-h-screen">
+    <div className="p-6 bg-gray-50 min-h-screen">
       <PageHeader 
         title={`Cliente: ${cliente.nome}`} 
         greeting="👤 Detalhes Completos - Calçados Araújo" 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useSidebar } from '@/components/SidebarContext';
+import { useSidebar } from '@/components/layout/SidebarContext';
 
 export default function MainContent({ children }) {
   const { data: session } = useSession();

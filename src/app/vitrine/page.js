@@ -1,4 +1,5 @@
 'use client';
+
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { Search, Filter, Heart, ShoppingBag } from 'lucide-react';
@@ -68,7 +69,7 @@ export default function VitrinePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* HEADER - CORES DA LOJA #394189 + #c33638 */}
-      <section className="relative overflow-hidden bg-gradient-to-r from-[#394189] to-[#c33638] text-white py-20">
+      <section className="relative overflow-hidden bg-gradient-to-r from-[#394189] to-[#c33638] text-white py-25">
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center">
@@ -94,10 +95,10 @@ export default function VitrinePage() {
       </section>
 
       {/* SEARCH + FILTROS - NEUTRO */}
-      <div className="container mx-auto px-4 py-8 -mt-16 relative z-10">
+      <div className="container mx-auto px-4 py-8 -mt-20 relative z-10">
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 text-gray-500">
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="relative flex-1 max-w-md">
+          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center md:justify-between">
+            <div className="relative flex-1 max-w-md w-full">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
@@ -107,14 +108,12 @@ export default function VitrinePage() {
                 className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
               />
             </div>
-            
-            <div className="flex items-center gap-2">
-              <Filter className="text-gray-400 w-5 h-5" />
+            <div className="relative flex-1 max-w-md w-full md:max-w-none md:w-auto">
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <select
-                onChange={(e) => setSelectedMarcas(
-                  e.target.value ? [e.target.value] : []
-                )}
-                className="border border-gray-200 rounded-xl px-4 py-2 focus:ring-2 focus:ring-green-500 bg-white"
+                onChange={(e) => setSelectedMarcas(e.target.value ? [e.target.value] : [])}
+                className="w-full md:w-auto pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 bg-white"
+                aria-label="Filtrar por marca"
               >
                 <option value="">Todas as Marcas</option>
                 {marcasUnicas.map(marca => (
@@ -123,12 +122,10 @@ export default function VitrinePage() {
               </select>
             </div>
           </div>
-          
           <p className="text-sm text-gray-600 mt-2 font-medium">
             {filteredProdutos.length} produto{filteredProdutos.length !== 1 ? 's' : ''} encontrado{filteredProdutos.length !== 1 ? 's' : ''}
           </p>
         </div>
-
         {/* CARDS - NEUTRO + VERDE */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredProdutos.map((produto, index) => (

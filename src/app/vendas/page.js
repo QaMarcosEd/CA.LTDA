@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { Package, Zap, TrendingUp, CreditCard, User, ShoppingCart, Filter } from 'lucide-react';
-import { formatDateToBrazil } from '../../../utils/formatDate';
-import ModalGerenciarParcelas from '@/components/ui/modals/ModalGerenciarParcelas';
-import PageHeader from '@/components/Header';
+import { formatDateToBrazil } from '../../utils/formatDate';
+import ModalGerenciarParcelas from '@/components/modals/ModalGerenciarParcelas';
+import PageHeader from '@/components/layout/Header';
 
 export default function Vendas() {
   const [vendas, setVendas] = useState([]);

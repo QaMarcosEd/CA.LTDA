@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { formatPhoneNumber } from '../../../utils/formatPhoneNumber';
+import { formatPhoneNumber } from '../../utils/formatPhoneNumber';
 import { Users, User, Phone, Calendar, DollarSign, ShoppingBag, Edit, Eye } from 'lucide-react';
-import PageHeader from '@/components/Header';
+import PageHeader from '@/components/layout/Header';
 
 export default function Clientes() {
   const [clientes, setClientes] = useState([]);
@@ -92,16 +92,43 @@ export default function Clientes() {
     return diasDesdeUltima > 90;
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="bg-white rounded-2xl p-8 shadow-xl flex items-center gap-4">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#394189] border-t-transparent"></div>
-          <span className="text-lg font-semibold text-[#394189]">Carregando clientes...</span>
+// LOADING STATE - CLIENTES MINIMALISTA
+if (loading) return (
+  <div className="p-6 bg-gray-50 min-h-screen">
+    {/* Header */}
+    <div className="w-56 h-5 bg-gray-200 animate-pulse rounded mb-6"></div>
+    
+    {/* 4 Cards Resumo - SUPER COMPACTO */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 max-w-7xl mx-auto">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="bg-white rounded-xl p-4 h-20 flex items-center gap-3">
+          <div className="w-8 h-8 bg-gray-200 rounded-lg"></div>
+          <div className="space-y-1 flex-1">
+            <div className="w-20 h-2 bg-gray-200 rounded"></div>
+            <div className="w-24 h-5 bg-gray-200 rounded"></div>
+          </div>
         </div>
+      ))}
+    </div>
+
+    {/* Tabela - SUPER COMPACTA */}
+    <div className="bg-white rounded-xl p-4 max-w-7xl mx-auto">
+      {/* Header da tabela */}
+      <div className="flex gap-4 mb-3 h-10 bg-gray-50 rounded animate-pulse"></div>
+      
+      {/* Linhas da tabela */}
+      <div className="space-y-2">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="h-12 bg-gray-50 rounded animate-pulse flex items-center px-4">
+            <div className="flex-1 space-x-4">
+              <div className="w-4 h-2 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        ))}
       </div>
-    );
-  }
+    </div>
+  </div>
+);
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -109,25 +136,30 @@ export default function Clientes() {
 
       <div className="max-w-7xl mx-auto">
         {/* RESUMO CARDS HARMONIOSOS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-          {[
-            { icon: Users, label: 'Total Clientes', value: totalClientes, color: '#394189' },
-            { icon: DollarSign, label: 'Valor Total', value: valorTotalGeral.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), color: '#c33638' },
-            { icon: ShoppingBag, label: 'Média/Cliente', value: mediaGasto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), color: '#10B981' },
-            { icon: Users, label: 'Unidades Vendidas', value: qtyItensGeral, color: '#8B5CF6' },
-          ].map((card, i) => (
-            <div key={i} className="group relative bg-white rounded-xl p-4 shadow-md border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 h-24 flex items-center justify-between">
-              <div className="absolute left-0 top-0 h-full w-0.5" style={{ backgroundColor: card.color }}></div>
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-white to-gray-50 flex items-center justify-center shadow-sm">
-                <card.icon className="w-5 h-5" style={{ color: card.color }} />
-              </div>
-              <div className="flex-1 ml-3 pr-2">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">{card.label}</p>
-                <p className="text-lg font-bold text-gray-900 truncate">{card.value}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+  {[
+    { icon: Users, label: 'Total Clientes', value: totalClientes, color: '#394189' },
+    { icon: DollarSign, label: 'Valor Total', value: valorTotalGeral.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), color: '#c33638' },
+    { icon: ShoppingBag, label: 'Média/Cliente', value: mediaGasto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), color: '#10B981' },
+    { icon: Users, label: 'Unidades Vendidas', value: qtyItensGeral, color: '#8B5CF6' },
+  ].map((card, i) => (
+    <div key={i} className="group relative bg-white rounded-xl p-4 shadow-md border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 h-24 flex items-center justify-between overflow-hidden">
+      {/* ✅ LINHA COM CURVAS - border-radius: 0.75rem (mesmo do card) */}
+      <div 
+        className="absolute left-0 top-0 h-full w-1 rounded-l-xl" 
+        style={{ backgroundColor: card.color }}
+      ></div>
+      
+      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-white to-gray-50 flex items-center justify-center shadow-sm ml-1">
+        <card.icon className="w-5 h-5" style={{ color: card.color }} />
+      </div>
+      <div className="flex-1 ml-3 pr-2">
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">{card.label}</p>
+        <p className="text-lg font-bold text-gray-900 truncate">{card.value}</p>
+      </div>
+    </div>
+  ))}
+</div>
 
         {/* TABELA MODERNA */}
         <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 overflow-hidden mb-8">

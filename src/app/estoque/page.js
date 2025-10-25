@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Package, Zap, TrendingUp, CreditCard, User, ShoppingCart, Plus } from 'lucide-react';
-import ModalRegistroBaixa from '../../components/ui/modals/ModalRegistroBaixa';
-import ConfirmDeleteModal from '../../components/ui/modals/ConfirmDeleteModal';
-import ModalCadastroLoteCalçados from '../../components/ui/modals/ModalCadastroLoteCalcados';
-import EditarProdutoModal from '../../components/ui/modals/EditarProdutoModal';
+import ModalRegistroBaixa from '../../components/modals/ModalRegistroBaixa';
+import ConfirmDeleteModal from '../../components/modals/ConfirmDeleteModal';
+import ModalCadastroLoteCalçados from '../../components/modals/ModalCadastroLoteCalcados';
+import EditarProdutoModal from '../../components/modals/EditarProdutoModal';
 import toast from 'react-hot-toast';
-import PageHeader from '@/components/Header';
+import PageHeader from '@/components/layout/Header';
 
 export default function Estoque() {
   const [produtos, setProdutos] = useState([]);
