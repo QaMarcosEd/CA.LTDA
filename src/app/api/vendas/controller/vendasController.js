@@ -1,4 +1,385 @@
-// // api/vendas/controller/vendasController.js
+// // // api/vendas/controller/vendasController.js
+// import { PrismaClient } from '@prisma/client';
+
+// const prisma = new PrismaClient();
+
+// // Função para criar uma nova venda no sistema.
+// export async function createVenda(data) {
+//   try {
+//     const { produtoId, quantidade, observacao, clienteNome, clienteId, valorTotal, dataVenda, formaPagamento, bandeira, modalidade, formaPagamentoEntrada } = data;
+//     let { isParcelado, numeroParcelas, entrada } = data;
+//     console.log('Dados recebidos em createVenda:', data); // Depuração
+
+//     // Validar entrada
+//     if (!produtoId) {
+//       console.log('Validação falhou: produtoId faltando', { produtoId });
+//       return { status: 400, data: { error: 'Produto ID é obrigatório' } };
+//     }
+//     if (!quantidade || quantidade <= 0) {
+//       console.log('Validação falhou: quantidade inválida', { quantidade });
+//       return { status: 400, data: { error: 'Quantidade deve ser maior que zero' } };
+//     }
+//     if (!valorTotal || valorTotal <= 0) {
+//       console.log('Validação falhou: valorTotal inválido', { valorTotal });
+//       return { status: 400, data: { error: 'Valor total deve ser maior que zero' } };
+//     }
+//     if (!clienteNome && !clienteId) {
+//       console.log('Validação falhou: clienteNome e clienteId faltando', { clienteNome, clienteId });
+//       return { status: 400, data: { error: 'Nome do cliente ou ID do cliente é obrigatório' } };
+//     }
+//     if (isParcelado && (!numeroParcelas || numeroParcelas < 1 || numeroParcelas > 12)) {
+//       console.log('Validação falhou: Número de parcelas inválido', { numeroParcelas });
+//       return { status: 400, data: { error: 'Número de parcelas deve ser entre 1 e 12' } };
+//     }
+//     if (isParcelado && entrada && parseFloat(entrada) > parseFloat(valorTotal)) {
+//       console.log('Validação falhou: Entrada maior que valor total', { entrada, valorTotal });
+//       return { status: 400, data: { error: 'Entrada não pode ser maior que o valor total' } };
+//     }
+//     if (!dataVenda) {
+//       console.log('Validação falhou: dataVenda faltando', { dataVenda });
+//       return { status: 400, data: { error: 'Data da venda é obrigatória' } };
+//     }
+//     const parsedDataVenda = new Date(dataVenda);
+//     if (isNaN(parsedDataVenda.getTime())) {
+//       console.log('Validação falhou: Data de venda inválida', { dataVenda });
+//       return { status: 400, data: { error: 'Data de venda inválida' } };
+//     }
+//     if (parsedDataVenda > new Date()) {
+//       console.log('Validação falhou: Data de venda futura', { dataVenda });
+//       return { status: 400, data: { error: 'Data de venda não pode ser futura' } };
+//     }
+
+//     // Validação nova para forma de pagamento
+//     if (!formaPagamento) {
+//       return { status: 400, data: { error: 'Forma de pagamento é obrigatória' } };
+//     }
+//     let taxa = 0;
+//     let valorLiquido = parseFloat(valorTotal);
+//     let formaPagamentoFormatada = formaPagamento.toUpperCase();
+
+//     if (formaPagamento === 'CARTAO') {
+//       if (!bandeira || !modalidade) {
+//         return { status: 400, data: { error: 'Bandeira e modalidade são obrigatórias para cartão' } };
+//       }
+//       const taxaCartao = await prisma.taxaCartao.findUnique({
+//         where: { bandeira_modalidade: { bandeira: bandeira.toUpperCase(), modalidade: modalidade.toUpperCase() } },
+//       });
+//       if (!taxaCartao) {
+//         return { status: 400, data: { error: 'Taxa não encontrada para essa bandeira e modalidade' } };
+//       }
+//       const taxaPercentual = taxaCartao.taxaPercentual / 100;
+//       taxa = parseFloat((parseFloat(valorTotal) * taxaPercentual).toFixed(2));
+//       valorLiquido = parseFloat((parseFloat(valorTotal) - taxa).toFixed(2));
+//       formaPagamentoFormatada = `CARTAO_${bandeira.toUpperCase()}_${modalidade.toUpperCase()}`;
+//     } else if (isParcelado && formaPagamento !== 'PROMISSORIA') {
+//       return { status: 400, data: { error: 'Para parcelado sem promissória, use cartão com modalidade' } };
+//     }
+
+//     // Validação para formaPagamentoEntrada (somente para promissória com entrada > 0)
+//     if (formaPagamento === 'PROMISSORIA' && parseFloat(entrada) > 0) {
+//       if (!formaPagamentoEntrada || !['PIX', 'DINHEIRO'].includes(formaPagamentoEntrada.toUpperCase())) {
+//         return { status: 400, data: { error: 'Forma de pagamento da entrada deve ser PIX ou DINHEIRO para promissória com entrada' } };
+//       }
+//     }
+
+//     if (formaPagamento === 'CARTAO' && !isParcelado) {
+//       isParcelado = true;
+//       numeroParcelas = 1;
+//       entrada = 0;
+//     }
+
+//     let finalClienteId = clienteId;
+//     if (!finalClienteId && clienteNome) {
+//       let cliente = await prisma.cliente.findUnique({ where: { nome: clienteNome } });
+//       if (!cliente) {
+//         cliente = await prisma.cliente.create({
+//           data: { nome: clienteNome },
+//         });
+//       }
+//       finalClienteId = cliente.id;
+//     }
+
+//     if (!finalClienteId) {
+//       console.log('Validação falhou: Cliente inválido');
+//       return { status: 400, data: { error: 'Cliente inválido' } };
+//     }
+
+//     const produto = await prisma.produto.findUnique({ where: { id: parseInt(produtoId) } });
+
+//     if (!produto) {
+//       console.log('Validação falhou: Produto não encontrado', { produtoId });
+//       return { status: 404, data: { error: 'Produto não encontrado' } };
+//     }
+
+//     if (produto.quantidade < quantidade) {
+//       console.log('Validação falhou: Estoque insuficiente', { quantidade, estoque: produto.quantidade });
+//       return { status: 400, data: { error: 'Estoque insuficiente' } };
+//     }
+
+//     const vendaData = {
+//       produtoId: parseInt(produtoId),
+//       quantidade: parseInt(quantidade),
+//       precoVenda: parseFloat(produto.precoVenda),
+//       valorTotal: parseFloat(valorTotal),
+//       entrada: isParcelado ? parseFloat(entrada) || 0 : parseFloat(valorTotal),
+//       formaPagamentoEntrada: formaPagamento === 'PROMISSORIA' && parseFloat(entrada) > 0 ? formaPagamentoEntrada.toUpperCase() : null,
+//       clienteId: finalClienteId,
+//       observacao: observacao || null,
+//       dataVenda: parsedDataVenda,
+//       formaPagamento: formaPagamentoFormatada,
+//       taxa,
+//       valorLiquido,
+//       status: isParcelado ? 'ABERTO' : 'QUITADO',
+//     };
+
+//     if (isParcelado) {
+//   const entradaValor = parseFloat(entrada) || 0;
+//   const valorRestante = parseFloat(valorTotal) - entradaValor;
+//   const valorRestanteLiquido = parseFloat(valorLiquido) - entradaValor;
+//   const valorBaseParcela = Math.floor((valorRestante / numeroParcelas) * 100) / 100;
+//   const valorBaseParcelaLiquido = Math.floor((valorRestanteLiquido / numeroParcelas) * 100) / 100;
+//   const taxaPorParcela = formaPagamento === 'CARTAO' ? parseFloat((taxa / numeroParcelas).toFixed(2)) : 0;
+
+//   const parcelas = [];
+//   let somaParcelasLiquido = 0;
+
+//   for (let index = 0; index < numeroParcelas; index++) {
+//     const dataVencimento = new Date(parsedDataVenda);
+//     dataVencimento.setMonth(dataVencimento.getMonth() + (index + 1));
+//     const isLastParcela = index === numeroParcelas - 1;
+//     const valorParcela = isLastParcela
+//       ? parseFloat((valorRestante - valorBaseParcela * (numeroParcelas - 1)).toFixed(2))
+//       : parseFloat(valorBaseParcela.toFixed(2));
+//     const valorParcelaLiquido = isLastParcela
+//       ? parseFloat((valorRestanteLiquido - valorBaseParcelaLiquido * (numeroParcelas - 1)).toFixed(2))
+//       : parseFloat(valorBaseParcelaLiquido.toFixed(2));
+
+//     // Verificação para evitar que valorParcelaLiquido seja igual ao total líquido
+//     if (Math.abs(valorParcelaLiquido - valorLiquido) < 0.01) {
+//       console.error('Erro detectado: valorParcelaLiquido está igual ao valorLiquido total. Provável typo no código.');
+//       return { status: 500, data: { error: 'Erro interno: valor líquido das parcelas inválido (igual ao total)' } };
+//     }
+
+//     somaParcelasLiquido += valorParcelaLiquido;
+
+//     const parcela = {
+//       numeroParcela: index + 1,
+//       valor: valorParcela,
+//       valorPago: 0,
+//       dataVencimento,
+//       pago: false,
+//       observacao: null,
+//       formaPagamento: formaPagamento === 'CARTAO' ? formaPagamentoFormatada : 'PROMISSORIA',
+//       taxa: taxaPorParcela,
+//       valorLiquido: valorParcelaLiquido, // Certifique-se de que é valorParcelaLiquido, NÃO valorLiquido!
+//     };
+//     console.log(`Parcela ${index + 1} calculada:`, parcela);
+//     parcelas.push(parcela);
+//   }
+
+//   // Validação final da soma
+//   if (Math.abs(somaParcelasLiquido - valorRestanteLiquido) > 0.01) {
+//     console.error('Erro na soma das parcelas líquidas:', { somaParcelasLiquido, valorRestanteLiquido });
+//     return { status: 500, data: { error: 'Erro interno: soma das parcelas líquidas inválida' } };
+//   }
+
+//   vendaData.parcelas = { create: parcelas };
+//   vendaData.status = 'ABERTO';
+// }
+
+//     console.log('Dados da venda a serem criados:', vendaData);
+
+//     // NOVO: Usa transação para criar venda, atualizar estoque e cliente
+//     const result = await prisma.$transaction(async (tx) => {
+//       const venda = await tx.venda.create({
+//         data: vendaData,
+//         include: { cliente: { select: { nome: true } }, parcelas: true },
+//       });
+
+//       console.log('Venda criada:', venda);
+
+//       await tx.produto.update({
+//         where: { id: parseInt(produtoId) },
+//         data: {
+//           quantidade: produto.quantidade - quantidade,
+//           disponivel: produto.quantidade - quantidade > 0,
+//         },
+//       });
+
+//       // NOVO: Atualiza ultimaCompra no cliente
+//       await tx.cliente.update({
+//         where: { id: finalClienteId },
+//         data: { ultimaCompra: parsedDataVenda },
+//       });
+//       console.log('ultimaCompra atualizada para cliente', finalClienteId, 'em', parsedDataVenda);
+
+//       return venda;
+//     });
+
+//     return { status: 201, data: result };
+//   } catch (error) {
+//     console.error('Erro ao registrar venda:', error);
+//     return { status: 500, data: { error: 'Erro ao registrar venda', details: error.message } };
+//   } finally {
+//     await prisma.$disconnect(); // Boa prática
+//   }
+// }
+
+// export async function getVendasPorProduto(produtoId) {
+//   try {
+//     const vendas = await prisma.venda.findMany({
+//       where: { produtoId: parseInt(produtoId) },
+//       orderBy: { dataVenda: 'desc' },
+//       include: {
+//         produto: true,
+//         cliente: { select: { nome: true } },
+//         parcelas: true,
+//       },
+//     });
+//     console.log('Vendas por produto retornadas:', vendas);
+//     return { status: 200, data: vendas };
+//   } catch (error) {
+//     console.error('Erro ao listar vendas:', error);
+//     return { status: 500, data: { error: 'Erro ao listar vendas', details: error.message } };
+//   }
+// }
+
+// export async function getTodasAsVendas(filtros = {}) {
+//   try {
+//     const { formaPagamento, dataInicio, dataFim, status, resumo } = filtros;
+//     const whereClause = {
+//       dataVenda: {},
+//     };
+
+//     if (dataInicio) whereClause.dataVenda.gte = new Date(dataInicio);
+//     if (dataFim) whereClause.dataVenda.lte = new Date(dataFim);
+//     if (status && status !== 'TODAS') whereClause.status = status;
+//     if (formaPagamento && formaPagamento !== 'TODAS') {
+//       if (formaPagamento === 'CARTAO') {
+//         whereClause.formaPagamento = { contains: 'CARTAO' };
+//       } else {
+//         whereClause.formaPagamento = { equals: formaPagamento };
+//       }
+//     }
+
+//     console.log('Where Clause completa:', whereClause);
+
+//     const vendas = await prisma.venda.findMany({
+//       where: whereClause,
+//       orderBy: { dataVenda: 'desc' },
+//       include: {
+//         produto: true,
+//         cliente: { select: { nome: true } },
+//         parcelas: true,
+//       },
+//     });
+
+//     const resumoData = calcularResumoVendas(vendas);
+
+//     // NOVO: Ranking de modelos mais vendidos via raw query (pra join com Produto.modelo)
+//     let rankingModelos = [];
+//     try {
+//       const whereConditions = [];
+//       const params = [];
+
+//       if (dataInicio) {
+//         whereConditions.push(`"Venda"."dataVenda" >= ?`);
+//         params.push(new Date(dataInicio).toISOString());
+//       }
+//       if (dataFim) {
+//         whereConditions.push(`"Venda"."dataVenda" <= ?`);
+//         params.push(new Date(dataFim).toISOString());
+//       }
+//       if (status && status !== 'TODAS') {
+//         whereConditions.push(`"Venda"."status" = ?`);
+//         params.push(status);
+//       }
+//       if (formaPagamento && formaPagamento !== 'TODAS') {
+//         if (formaPagamento === 'CARTAO') {
+//           whereConditions.push(`"Venda"."formaPagamento" LIKE ?`);
+//           params.push('%CARTAO%');
+//         } else {
+//           whereConditions.push(`"Venda"."formaPagamento" = ?`);
+//           params.push(formaPagamento);
+//         }
+//       }
+
+//       let whereSQL = whereConditions.length > 0 ? 'WHERE ' + whereConditions.join(' AND ') : '';
+
+//       const rawQuery = `
+//         SELECT COALESCE("Produto"."modelo", 'Desconhecido') AS modelo, SUM("Venda"."quantidade") AS qtyVendida
+//         FROM "Venda"
+//         LEFT JOIN "Produto" ON "Venda"."produtoId" = "Produto"."id"
+//         ${whereSQL}
+//         GROUP BY "Produto"."modelo"
+//         HAVING SUM("Venda"."quantidade") > 0
+//         ORDER BY qtyVendida DESC
+//       `;
+
+//       const rawResults = await prisma.$queryRawUnsafe(rawQuery, ...params);
+//       rankingModelos = rawResults.map(row => ({
+//         modelo: row.modelo || 'Desconhecido',
+//         qtyVendida: Number(row.qtyVendida) || 0,
+//       }));
+//     } catch (rawError) {
+//       console.error('Erro no ranking raw query:', rawError);
+//       // Não crasha o resto – ranking fica vazio
+//       rankingModelos = [];
+//     }
+
+//     if (resumo) {
+//       return { status: 200, data: { resumo: resumoData } };
+//     }
+
+//     return { status: 200, data: { vendas, resumo: resumoData, rankingModelos } };
+//   } catch (error) {
+//     console.error('Erro ao listar vendas filtradas:', error);
+//     return { status: 500, data: { error: 'Erro ao listar vendas: ' + error.message } };
+//   }
+// }
+
+// function calcularResumoVendas(vendas) {
+//   let totalQuitado = 0;
+//   let totalPendente = 0;
+//   let porForma = { DINHEIRO: 0, PIX: 0, CARTAO: 0, PROMISSORIA: 0 };
+
+//   vendas.forEach((venda) => {
+//     const entrada = parseFloat(venda.entrada || 0);
+//     let valorPago = entrada;
+//     let pendente = parseFloat(venda.valorTotal) - valorPago;
+
+//     let entradaMethod = venda.formaPagamentoEntrada || venda.formaPagamento;
+//     if (entradaMethod.startsWith('CARTAO')) entradaMethod = 'CARTAO';
+//     if (porForma[entradaMethod] !== undefined) {
+//       porForma[entradaMethod] += entrada;
+//     }
+
+//     venda.parcelas.forEach((parcela) => {
+//       const parcelaPago = parseFloat(parcela.valorPago || 0);
+//       valorPago += parcelaPago;
+//       pendente -= parcelaPago;
+
+//       if (parcelaPago > 0) {
+//         let parcelaMethod = parcela.formaPagamento;
+//         if (parcelaMethod.startsWith('CARTAO')) parcelaMethod = 'CARTAO';
+//         if (porForma[parcelaMethod] !== undefined) {
+//           porForma[parcelaMethod] += parcelaPago;
+//         }
+//       }
+//     });
+
+//     totalQuitado += valorPago;
+//     totalPendente += pendente;
+
+//     if (venda.formaPagamento === 'PROMISSORIA' && pendente > 0) {
+//       porForma.PROMISSORIA += pendente;
+//     }
+//   });
+
+//   return { totalQuitado: totalQuitado.toFixed(2), totalPendente: totalPendente.toFixed(2), porForma };
+// }
+
+// api/vendas/controller/vendasController.js
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -131,41 +512,59 @@ export async function createVenda(data) {
       valorLiquido,
       status: isParcelado ? 'ABERTO' : 'QUITADO',
     };
-
+    
     if (isParcelado) {
       const entradaValor = parseFloat(entrada) || 0;
       const valorRestante = parseFloat(valorTotal) - entradaValor;
-      const valorRestanteLiquido = valorLiquido - entradaValor;
+      const valorRestanteLiquido = parseFloat(valorLiquido) - entradaValor;
       const valorBaseParcela = Math.floor((valorRestante / numeroParcelas) * 100) / 100;
       const valorBaseParcelaLiquido = Math.floor((valorRestanteLiquido / numeroParcelas) * 100) / 100;
       const taxaPorParcela = formaPagamento === 'CARTAO' ? parseFloat((taxa / numeroParcelas).toFixed(2)) : 0;
 
-      vendaData.parcelas = {
-        create: Array.from({ length: numeroParcelas }, (_, index) => {
-          const dataVencimento = new Date(parsedDataVenda);
-          dataVencimento.setMonth(dataVencimento.getMonth() + (index + 1));
-          const isLastParcela = index === numeroParcelas - 1;
-          const valorParcela = isLastParcela
-            ? parseFloat((valorRestante - valorBaseParcela * (numeroParcelas - 1)).toFixed(2))
-            : parseFloat(valorBaseParcela.toFixed(2));
-          const valorParcelaLiquido = isLastParcela
-            ? parseFloat((valorRestanteLiquido - valorBaseParcelaLiquido * (numeroParcelas - 1)).toFixed(2))
-            : parseFloat(valorBaseParcelaLiquido.toFixed(2));
-          const parcela = {
-            numeroParcela: index + 1,
-            valor: valorParcela,
-            valorPago: 0,
-            dataVencimento,
-            pago: false,
-            observacao: null,
-            formaPagamento: formaPagamento === 'CARTAO' ? formaPagamentoFormatada : 'PROMISSORIA',
-            taxa: taxaPorParcela,
-            valorLiquido: valorParcelaLiquido,
-          };
-          console.log(`Criando parcela ${index + 1}:`, parcela);
-          return parcela;
-        }),
-      };
+      const parcelas = [];
+      let somaParcelasLiquido = 0;
+
+      for (let index = 0; index < numeroParcelas; index++) {
+        const dataVencimento = new Date(parsedDataVenda);
+        dataVencimento.setMonth(dataVencimento.getMonth() + (index + 1));
+        const isLastParcela = index === numeroParcelas - 1;
+        const valorParcela = isLastParcela
+          ? parseFloat((valorRestante - valorBaseParcela * (numeroParcelas - 1)).toFixed(2))
+          : parseFloat(valorBaseParcela.toFixed(2));
+        const valorParcelaLiquido = isLastParcela
+          ? parseFloat((valorRestanteLiquido - valorBaseParcelaLiquido * (numeroParcelas - 1)).toFixed(2))
+          : parseFloat(valorBaseParcelaLiquido.toFixed(2));
+
+        // Verificação para evitar que valorParcelaLiquido seja igual ao total líquido
+        if (Math.abs(valorParcelaLiquido - valorLiquido) < 0.01) {
+          console.error('Erro detectado: valorParcelaLiquido está igual ao valorLiquido total. Provável typo no código.');
+          return { status: 500, data: { error: 'Erro interno: valor líquido das parcelas inválido (igual ao total)' } };
+        }
+
+        somaParcelasLiquido += valorParcelaLiquido;
+
+        const parcela = {
+          numeroParcela: index + 1,
+          valor: valorParcela,
+          valorPago: 0,
+          dataVencimento,
+          pago: false,
+          observacao: null,
+          formaPagamento: formaPagamento === 'CARTAO' ? formaPagamentoFormatada : 'PROMISSORIA',
+          taxa: taxaPorParcela,
+          valorLiquido: valorParcelaLiquido, // Certifique-se de que é valorParcelaLiquido, NÃO valorLiquido!
+        };
+        console.log(`Parcela ${index + 1} calculada:`, parcela);
+        parcelas.push(parcela);
+      }
+
+      // Validação final da soma
+      if (Math.abs(somaParcelasLiquido - valorRestanteLiquido) > 0.01) {
+        console.error('Erro na soma das parcelas líquidas:', { somaParcelasLiquido, valorRestanteLiquido });
+        return { status: 500, data: { error: 'Erro interno: soma das parcelas líquidas inválida' } };
+      }
+
+      vendaData.parcelas = { create: parcelas };
       vendaData.status = 'ABERTO';
     }
 
@@ -226,49 +625,6 @@ export async function getVendasPorProduto(produtoId) {
   }
 }
 
-// export async function getTodasAsVendas(filtros = {}) {
-//   try {
-//     const { formaPagamento, dataInicio, dataFim, status, resumo } = filtros;
-//     const whereClause = {
-//       dataVenda: {},
-//     };
-
-//     if (dataInicio) whereClause.dataVenda.gte = new Date(dataInicio);
-//     if (dataFim) whereClause.dataVenda.lte = new Date(dataFim);
-//     if (status && status !== 'TODAS') whereClause.status = status;
-//     if (formaPagamento && formaPagamento !== 'TODAS') {
-//       if (formaPagamento === 'CARTAO') {
-//         whereClause.formaPagamento = { contains: 'CARTAO' };
-//       } else {
-//         whereClause.formaPagamento = { equals: formaPagamento };
-//       }
-//     }
-
-//     console.log('Where Clause completa:', whereClause);
-
-//     const vendas = await prisma.venda.findMany({
-//       where: whereClause,
-//       orderBy: { dataVenda: 'desc' },
-//       include: {
-//         produto: true,
-//         cliente: { select: { nome: true } },
-//         parcelas: true,
-//       },
-//     });
-
-//     const resumoData = calcularResumoVendas(vendas);
-
-//     if (resumo) {
-//       return { status: 200, data: { resumo: resumoData } };
-//     }
-
-//     return { status: 200, data: { vendas, resumo: resumoData } };
-//   } catch (error) {
-//     console.error('Erro ao listar vendas filtradas:', error);
-//     return { status: 500, data: { error: 'Erro ao listar vendas: ' + error.message } };
-//   }
-// }
-
 export async function getTodasAsVendas(filtros = {}) {
   try {
     const { formaPagamento, dataInicio, dataFim, status, resumo } = filtros;
@@ -299,7 +655,24 @@ export async function getTodasAsVendas(filtros = {}) {
       },
     });
 
-    const resumoData = calcularResumoVendas(vendas);
+    // Ajustar cada venda com totalExibicao e valorEmAberto
+    const vendasAjustadas = vendas.map((venda) => {
+      const temTaxa = venda.formaPagamento?.startsWith('CARTAO_') && venda.taxa > 0;
+      const valorPagoTotal = (venda.entrada || 0) + venda.parcelas.reduce((sum, p) => sum + (p.valorPago || 0), 0);
+      const totalExibicao = temTaxa ? parseFloat(venda.valorLiquido) : parseFloat(venda.valorTotal);
+      const valorEmAberto = temTaxa
+        ? parseFloat(venda.valorLiquido) - valorPagoTotal
+        : parseFloat(venda.valorTotal) - valorPagoTotal;
+
+      return {
+        ...venda,
+        totalExibicao,
+        valorPagoTotal,
+        valorEmAberto: Math.max(valorEmAberto, 0).toFixed(2), // Garante que não fique negativo
+      };
+    });
+
+    const resumoData = calcularResumoVendas(vendasAjustadas);
 
     // NOVO: Ranking de modelos mais vendidos via raw query (pra join com Produto.modelo)
     let rankingModelos = [];
@@ -356,7 +729,7 @@ export async function getTodasAsVendas(filtros = {}) {
       return { status: 200, data: { resumo: resumoData } };
     }
 
-    return { status: 200, data: { vendas, resumo: resumoData, rankingModelos } };
+    return { status: 200, data: { vendas: vendasAjustadas, resumo: resumoData, rankingModelos } };
   } catch (error) {
     console.error('Erro ao listar vendas filtradas:', error);
     return { status: 500, data: { error: 'Erro ao listar vendas: ' + error.message } };
@@ -369,38 +742,38 @@ function calcularResumoVendas(vendas) {
   let porForma = { DINHEIRO: 0, PIX: 0, CARTAO: 0, PROMISSORIA: 0 };
 
   vendas.forEach((venda) => {
-    const entrada = parseFloat(venda.entrada || 0);
-    let valorPago = entrada;
-    let pendente = parseFloat(venda.valorTotal) - valorPago;
+    const temTaxa = venda.formaPagamento?.startsWith('CARTAO_') && venda.taxa > 0;
+    const valorPagoTotal = parseFloat(venda.valorPagoTotal); // Usando o campo ajustado
+    const totalExibicao = parseFloat(venda.totalExibicao);
 
-    let entradaMethod = venda.formaPagamentoEntrada || venda.formaPagamento;
-    if (entradaMethod.startsWith('CARTAO')) entradaMethod = 'CARTAO';
-    if (porForma[entradaMethod] !== undefined) {
-      porForma[entradaMethod] += entrada;
+    totalQuitado += valorPagoTotal;
+    totalPendente += parseFloat(venda.valorEmAberto);
+
+    let forma = venda.formaPagamento?.startsWith('CARTAO_') ? 'CARTAO' : venda.formaPagamento || 'PROMISSORIA';
+    if (venda.formaPagamentoEntrada && venda.entrada > 0) {
+      forma = venda.formaPagamentoEntrada;
+    }
+    if (porForma[forma] !== undefined) {
+      porForma[forma] += valorPagoTotal;
     }
 
     venda.parcelas.forEach((parcela) => {
-      const parcelaPago = parseFloat(parcela.valorPago || 0);
-      valorPago += parcelaPago;
-      pendente -= parcelaPago;
-
-      if (parcelaPago > 0) {
-        let parcelaMethod = parcela.formaPagamento;
-        if (parcelaMethod.startsWith('CARTAO')) parcelaMethod = 'CARTAO';
+      if (parcela.valorPago > 0) {
+        let parcelaMethod = parcela.formaPagamento?.startsWith('CARTAO_') ? 'CARTAO' : parcela.formaPagamento || 'PROMISSORIA';
         if (porForma[parcelaMethod] !== undefined) {
-          porForma[parcelaMethod] += parcelaPago;
+          porForma[parcelaMethod] += parseFloat(parcela.valorPago);
         }
       }
     });
 
-    totalQuitado += valorPago;
-    totalPendente += pendente;
-
-    if (venda.formaPagamento === 'PROMISSORIA' && pendente > 0) {
-      porForma.PROMISSORIA += pendente;
+    if (venda.formaPagamento === 'PROMISSORIA' && parseFloat(venda.valorEmAberto) > 0) {
+      porForma.PROMISSORIA += parseFloat(venda.valorEmAberto);
     }
   });
 
-  return { totalQuitado: totalQuitado.toFixed(2), totalPendente: totalPendente.toFixed(2), porForma };
+  return {
+    totalQuitado: totalQuitado.toFixed(2),
+    totalPendente: totalPendente.toFixed(2),
+    porForma,
+  };
 }
-
