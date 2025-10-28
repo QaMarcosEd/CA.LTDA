@@ -290,33 +290,73 @@ export async function getTodasAsVendas(filtros = {}) {
     const resumoData = calcularResumoVendas(vendasAjustadas);
 
     // Calcular ranking de modelos mais vendidos com Prisma
-    const rankingModelos = await prisma.venda.groupBy({
-      by: ['produtoId'],
-      _sum: { quantidade: true },
-      where: {
-        ...whereClause,
-        produto: { modelo: { not: null } }, // Exclui produtos com modelo null
-      },
-    }).then(results => {
-      return prisma.produto.findMany({
-        where: {
-          id: { in: results.map(r => r.produtoId) },
-        },
-        select: {
-          id: true,
-          modelo: true,
-        },
-      }).then(produtos => {
-        return results.map(result => {
-          const produto = produtos.find(p => p.id === result.produtoId);
-          return {
-            modelo: produto?.modelo || 'Desconhecido',
-            qtyVendida: Number(result._sum.quantidade) || 0,
-          };
-        }).filter(item => item.qtyVendida > 0)
-         .sort((a, b) => b.qtyVendida - a.qtyVendida);
-      });
-    });
+    // const rankingModelos = await prisma.venda.groupBy({
+    //   by: ['produtoId'],
+    //   _sum: { quantidade: true },
+    //   where: {
+    //     ...whereClause,
+    //     produto: { modelo: { not: null } }, // Exclui produtos com modelo null
+    //   },
+    // }).then(results => {
+    //   return prisma.produto.findMany({
+    //     where: {
+    //       id: { in: results.map(r => r.produtoId) },
+    //     },
+    //     select: {
+    //       id: true,
+    //       modelo: true,
+    //     },
+    //   }).then(produtos => {
+    //     return results.map(result => {
+    //       const produto = produtos.find(p => p.id === result.produtoId);
+    //       return {
+    //         modelo: produto?.modelo || 'Desconhecido',
+    //         qtyVendida: Number(result._sum.quantidade) || 0,
+    //       };
+    //     }).filter(item => item.qtyVendida > 0)
+    //      .sort((a, b) => b.qtyVendida - a.qtyVendida);
+    //   });
+    // });
+        // === SUBSTITUA A PARTIR DA LINHA DO groupBy ===
+    let rankingModelos = [];
+
+    try {
+      const vendasCount = await prisma.venda.count({ where: whereClause });
+      
+      if (vendasCount > 0) {
+        const groupResults = await prisma.venda.groupBy({
+          by: ['produtoId'],
+          _sum: { quantidade: true },
+          where: whereClause,
+        });
+
+        if (groupResults.length > 0) {
+          const produtoIds = groupResults.map(r => r.produtoId);
+          const produtos = await prisma.produto.findMany({
+            where: { id: { in: produtoIds } },
+            select: { id: true, modelo: true },
+          });
+
+          rankingModelos = groupResults
+            .map(result => {
+              const produto = produtos.find(p => p.id === result.produtoId);
+              return {
+                modelo: produto?.modelo || 'Desconhecido',
+                qtyVendida: Number(result._sum.quantidade) || 0,
+              };
+            })
+            .filter(item => item.qtyVendida > 0)
+            .sort((a, b) => b.qtyVendida - a.qtyVendida)
+            .slice(0, 5); // opcional: top 5
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao calcular ranking de modelos:', error);
+      rankingModelos = [];
+    }
+
+    console.log('Ranking de modelos:', rankingModelos);
+    // === FIM DA SUBSTITUIÇÃO ===
 
     console.log('Ranking de modelos:', rankingModelos);
 
