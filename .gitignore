@@ -15,6 +15,7 @@ scripts/
 
 # Ignora arquivo na raiz
 seed-produtos.js
+seed.js
 
 # testing
 /coverage
