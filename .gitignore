@@ -10,8 +10,10 @@
 !.yarn/releases
 !.yarn/versions
 
-# pastas
-/scripts
+# Ignora pasta scripts (na raiz)
+scripts/
+
+# Ignora arquivo na raiz
 seed-produtos.js
 
 # testing
