@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { formatPhoneNumber } from '../../utils/formatPhoneNumber';
+import { formatPhoneNumber } from '../../../utils/formatPhoneNumber';
 import { Users, User, Phone, Calendar, DollarSign, ShoppingBag, Edit, Eye } from 'lucide-react';
 import PageHeader from '@/components/layout/Header';
 
