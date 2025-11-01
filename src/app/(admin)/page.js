@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Package, AlertTriangle, DollarSign, TrendingUp } from 'lucide-react';
 import PageHeader from '@/components/layout/Header';
+import LoadingSkeleton from '@/components/common/LoadingSkeleton';
 
 const formatCurrency = (value) => {
   const num = parseFloat(value) || 0;
@@ -89,39 +90,7 @@ export default function Home() {
     fetchRankingVendidos();
   }, [epoca]);
 
- // LOADING STATE - VERSÃO MINIMALISTA
-if (loading) return (
-  <div className="p-6 bg-gray-50 min-h-screen">
-    {/* Header */}
-    <div className="w-48 h-5 bg-gray-200 animate-pulse rounded mb-6"></div>
-    
-    {/* Toggle */}
-    <div className="w-28 h-8 bg-gray-200 animate-pulse rounded mb-6"></div>
-
-    {/* 5 Cards - SUPER COMPACTO */}
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
-      {[...Array(5)].map((_, i) => (
-        <div key={i} className="bg-white p-4 rounded-xl h-16 flex items-center gap-3">
-          <div className="w-6 h-6 bg-gray-200 rounded-full"></div>
-          <div className="space-y-1 flex-1">
-            <div className="w-12 h-2.5 bg-gray-200 rounded"></div>
-            <div className="w-16 h-5 bg-gray-200 rounded"></div>
-          </div>
-        </div>
-      ))}
-    </div>
-
-    {/* Tabela - SUPER COMPACTA */}
-    <div className="bg-white rounded-xl p-4">
-      <div className="w-40 h-4 bg-gray-200 rounded mb-3"></div>
-      <div className="space-y-2">
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className="h-8 bg-gray-50 rounded animate-pulse"></div>
-        ))}
-      </div>
-    </div>
-  </div>
-);
+  if (loading) return <LoadingSkeleton type="home" />;
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">

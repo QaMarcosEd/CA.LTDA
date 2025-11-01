@@ -9,6 +9,7 @@ import ModalCadastroLoteCalçados from '../../../components/modals/ModalCadastro
 import EditarProdutoModal from '../../../components/modals/EditarProdutoModal';
 import toast from 'react-hot-toast';
 import PageHeader from '@/components/layout/Header';
+import LoadingSkeleton from '@/components/common/LoadingSkeleton';
 import { useSession } from 'next-auth/react';
 
 export default function Estoque() {
@@ -179,16 +180,7 @@ export default function Estoque() {
     return { status: response.status, data: result };
   };
 
-  if (loading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 space-y-4 p-4">
-      <div className="w-64 h-4 bg-gray-300 animate-pulse rounded"></div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-4xl">
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className="w-full h-16 bg-gray-300 animate-pulse rounded"></div>
-        ))}
-      </div>
-    </div>
-  );
+  if (loading) return <LoadingSkeleton type="estoque" />;
 
   return (
     <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
@@ -407,32 +399,6 @@ export default function Estoque() {
                           📦
                         </button>
                       </td>
-                      {/* <td className="px-1 sm:px-2 lg:px-4 py-3 whitespace-nowrap text-sm font-medium space-x-1">
-                        <button
-                          onClick={() => {
-                            setSelectedEditId(p.id);
-                            setEditModalOpen(true);
-                          }}
-                          className="text-[#10B981] hover:text-green-700 font-medium transition-colors"
-                          title="Editar"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          onClick={() => handleOpenDeleteModal(p)}
-                          className="text-[#c33638] hover:text-red-700 font-medium transition-colors"
-                          title="Deletar"
-                        >
-                          🗑️
-                        </button>
-                        <button
-                          onClick={() => handleOpenModal(p)}
-                          className="text-[#394189] hover:text-blue-700 font-medium transition-colors"
-                          title="Baixa"
-                        >
-                          📦
-                        </button>
-                      </td> */}
                     </tr>
                   ))}
                 </tbody>

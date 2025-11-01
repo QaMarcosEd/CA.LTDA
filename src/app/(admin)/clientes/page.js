@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { formatPhoneNumber } from '../../../utils/formatPhoneNumber';
 import { Users, User, Phone, Calendar, DollarSign, ShoppingBag, Edit, Eye } from 'lucide-react';
 import PageHeader from '@/components/layout/Header';
+import LoadingSkeleton from '@/components/common/LoadingSkeleton';
 
 export default function Clientes() {
   const [clientes, setClientes] = useState([]);
@@ -92,43 +93,7 @@ export default function Clientes() {
     return diasDesdeUltima > 90;
   };
 
-// LOADING STATE - CLIENTES MINIMALISTA
-if (loading) return (
-  <div className="p-6 bg-gray-50 min-h-screen">
-    {/* Header */}
-    <div className="w-56 h-5 bg-gray-200 animate-pulse rounded mb-6"></div>
-    
-    {/* 4 Cards Resumo - SUPER COMPACTO */}
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 max-w-7xl mx-auto">
-      {[...Array(4)].map((_, i) => (
-        <div key={i} className="bg-white rounded-xl p-4 h-20 flex items-center gap-3">
-          <div className="w-8 h-8 bg-gray-200 rounded-lg"></div>
-          <div className="space-y-1 flex-1">
-            <div className="w-20 h-2 bg-gray-200 rounded"></div>
-            <div className="w-24 h-5 bg-gray-200 rounded"></div>
-          </div>
-        </div>
-      ))}
-    </div>
-
-    {/* Tabela - SUPER COMPACTA */}
-    <div className="bg-white rounded-xl p-4 max-w-7xl mx-auto">
-      {/* Header da tabela */}
-      <div className="flex gap-4 mb-3 h-10 bg-gray-50 rounded animate-pulse"></div>
-      
-      {/* Linhas da tabela */}
-      <div className="space-y-2">
-        {[...Array(6)].map((_, i) => (
-          <div key={i} className="h-12 bg-gray-50 rounded animate-pulse flex items-center px-4">
-            <div className="flex-1 space-x-4">
-              <div className="w-4 h-2 bg-gray-200 rounded"></div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  </div>
-);
+  if (loading) return <LoadingSkeleton type="clientes-lista" />;
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">

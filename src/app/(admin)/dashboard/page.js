@@ -2,11 +2,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Package, AlertTriangle, DollarSign, Box, TrendingUp, CreditCard, Zap, Edit2, Save, X } from 'lucide-react';
 import PageHeader from '@/components/layout/Header';
 import toast from 'react-hot-toast';
+import LoadingSkeleton from '@/components/common/LoadingSkeleton';
 
 export default function Dashboard() {
   const [produtos, setProdutos] = useState([]);
@@ -180,17 +180,7 @@ export default function Dashboard() {
 
   const COLORS = ['#394189', '#c33638', '#10B981', '#F59E0B'];
 
-  if (loading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 space-y-4">
-      <div className="w-64 h-4 bg-gray-300 animate-pulse rounded"></div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {[...Array(6)].map(function (_, i) {
-          return <div key={i} className="w-48 h-32 bg-gray-300 animate-pulse rounded"></div>;
-        })}
-      </div>
-      <div className="w-full h-64 bg-gray-300 animate-pulse rounded"></div>
-    </div>
-  );
+  if (loading) return <LoadingSkeleton type="dashboard" />;
 
   if (error) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">

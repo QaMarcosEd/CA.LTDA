@@ -9,6 +9,7 @@ import { formatPhoneNumber } from '@/utils/formatPhoneNumber';
 import toast from 'react-hot-toast';
 import { User, DollarSign, CreditCard, ShoppingBag, Calendar, Edit3, Eye, Users, MapPin, Phone as PhoneIcon } from 'lucide-react';
 import PageHeader from '@/components/layout/Header';
+import LoadingSkeleton from '@/components/common/LoadingSkeleton';
 
 // Helper pra converter ISO date pra 'yyyy-MM-dd' pro input date
 const formatDateForInput = (isoDate) => {
@@ -155,14 +156,7 @@ toast.error('Edição cancelada', { duration: 2000 });
     return (entrada + venda.parcelas.reduce((sum, p) => sum + parseFloat(p.valorPago || 0), 0)).toFixed(2);
   };
 
-  if (loading) return (
-    <div className="min-h-screen bg-gradient-to-br from-[#394189]/5 to-[#c33638]/5 flex items-center justify-center p-6">
-      <div className="bg-white rounded-2xl p-8 shadow-xl flex items-center gap-4">
-        <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#394189] border-t-transparent"></div>
-        <span className="text-lg font-semibold text-[#394189]">Carregando detalhes...</span>
-      </div>
-    </div>
-  );
+  if (loading) return <LoadingSkeleton type="clientes-detalhe" />;
 
   if (error || !cliente) return (
     <div className="min-h-screen bg-gradient-to-br from-[#394189]/5 to-[#c33638]/5 flex items-center justify-center p-6">
