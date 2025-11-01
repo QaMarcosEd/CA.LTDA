@@ -6,9 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "seed:calcados": "node prisma/seedProducts.js",
-    "seed:cartao": "node prisma/seedCartao.js"
+    "lint": "eslint"
   },
   "dependencies": {
     "@prisma/client": "^6.15.0",

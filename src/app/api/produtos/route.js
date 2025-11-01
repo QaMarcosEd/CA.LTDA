@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/route';
-import { getAllProdutos, createProduto, updateProduto, deleteProduto } from './controller/produtosController'; // Ajuste
+import { getAllProdutos } from './controller/produtosController'; // Ajuste
 
 
 export async function GET(request) {
@@ -32,69 +32,5 @@ export async function GET(request) {
       { error: error.message || 'Erro ao buscar produtos' }, 
       { status: 500 }
     );
-  }
-}
-
-export async function POST(request) { // Adicionado se precisar create single
-  try {
-    const data = await request.json();
-    const result = await createProduto(data);
-    return NextResponse.json(result.data, { status: result.status });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
-
-export async function PUT(request) {
-    // ← VERIFICAÇÃO DE AUTENTICAÇÃO E PERMISSÃO
-    const session = await getServerSession(authOptions);
-    
-    // 1. SEM LOGIN → 401
-    if (!session) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    }
-    
-    // 2. SÓ ADMIN PODE DELETAR PRODUTOS
-    if (session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'Acesso negado. Apenas administradores podem deletar produtos.' }, 
-        { status: 403 }
-      );
-    }
-
-  try {
-    const data = await request.json();
-    const result = await updateProduto(data);
-    return NextResponse.json(result.data, { status: result.status });
-  } catch (error) {
-    const status = error.message.includes('inválida') ? 400 : 500;
-    return NextResponse.json({ error: error.message }, { status });
-  }
-}
-
-export async function DELETE(request) {
-  try {
-    // ← VERIFICAÇÃO DE AUTENTICAÇÃO E PERMISSÃO
-    const session = await getServerSession(authOptions);
-    
-    // 1. SEM LOGIN → 401
-    if (!session) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    }
-    
-    // 2. SÓ ADMIN PODE DELETAR PRODUTOS
-    if (session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'Acesso negado. Apenas administradores podem deletar produtos.' }, 
-        { status: 403 }
-      );
-    }
-
-    const { id } = await request.json();
-    const result = await deleteProduto(id);
-    return NextResponse.json(result.data, { status: result.status });
-  } catch (error) {
-    const status = error.message.includes('vinculado') ? 409 : 500;
-    return NextResponse.json({ error: error.message }, { status });
   }
 }

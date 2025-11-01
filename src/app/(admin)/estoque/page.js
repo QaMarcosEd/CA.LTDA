@@ -9,6 +9,7 @@ import ModalCadastroLoteCalçados from '../../../components/modals/ModalCadastro
 import EditarProdutoModal from '../../../components/modals/EditarProdutoModal';
 import toast from 'react-hot-toast';
 import PageHeader from '@/components/layout/Header';
+import { useSession } from 'next-auth/react';
 
 export default function Estoque() {
   const [produtos, setProdutos] = useState([]);
@@ -29,6 +30,8 @@ export default function Estoque() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedEditId, setSelectedEditId] = useState(null);
   const [apiError, setApiError] = useState(null);
+
+  const { data: session } = useSession();
 
   const fetchProdutos = async (filtros = {}, pg = 1) => {
     setLoading(true);
@@ -99,24 +102,33 @@ export default function Estoque() {
   };
 
   const handleDelete = async (id) => {
+  try {
+    const response = await fetch(`/api/produtos/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    // Sempre tenta ler JSON, mesmo em erro
+    let data;
     try {
-      const response = await fetch('/api/estoque', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
-      });
-      const data = await response.json();
-      if (response.status === 200) {
-        toast.success('Produto deletado com sucesso! ✅');
-        fetchProdutos({ marca: marcaFiltro, tamanho: tamanhoFiltro, referencia: referenciaFiltro }, page);
-      } else {
-        toast.error(data.error || 'Erro ao deletar produto ❌');
-      }
-    } catch (error) {
-      console.error('Erro geral em handleDelete:', error);
-      toast.error('Erro inesperado ao deletar produto ❌');
+      data = await response.json();
+    } catch {
+      data = { error: 'Resposta inválida do servidor' };
     }
-  };
+
+    if (response.ok) {
+      toast.success(data.message || 'Produto deletado com sucesso!');
+      fetchProdutos();
+    } else {
+      toast.error(data.error || 'Erro ao deletar produto');
+    }
+  } catch (error) {
+    console.error('Erro na requisição:', error);
+    toast.error('Erro inesperado ao deletar produto');
+  }
+};
 
   const handleOpenDeleteModal = (produto) => {
     setSelectedDeleteProduto(produto);
@@ -347,6 +359,55 @@ export default function Estoque() {
                         </span>
                       </td>
                       <td className="px-1 sm:px-2 lg:px-4 py-3 whitespace-nowrap text-sm font-medium space-x-1">
+                        {/* EDITAR */}
+                        {session?.user?.role === 'admin' ? (
+                          <button
+                            onClick={() => {
+                              setSelectedEditId(p.id);
+                              setEditModalOpen(true);
+                            }}
+                            className="text-[#10B981] hover:text-green-700 font-medium transition-colors cursor-pointer"
+                            title="Editar"
+                          >
+                            ✏️
+                          </button>
+                        ) : (
+                          <span
+                            className="text-gray-400 cursor-not-allowed"
+                            title="Apenas administradores podem editar"
+                          >
+                            ✏️
+                          </span>
+                        )}
+
+                        {/* EXCLUIR */}
+                        {session?.user?.role === 'admin' ? (
+                          <button
+                            onClick={() => handleOpenDeleteModal(p)}
+                            className="text-[#c33638] hover:text-red-700 font-medium transition-colors cursor-pointer"
+                            title="Deletar"
+                          >
+                            🗑️
+                          </button>
+                        ) : (
+                          <span
+                            className="text-gray-400 cursor-not-allowed"
+                            title="Apenas administradores podem excluir"
+                          >
+                            🗑️
+                          </span>
+                        )}
+
+                        {/* BAIXA (funcionário pode) */}
+                        <button
+                          onClick={() => handleOpenModal(p)}
+                          className="text-[#394189] hover:text-blue-700 font-medium transition-colors cursor-pointer"
+                          title="Baixa"
+                        >
+                          📦
+                        </button>
+                      </td>
+                      {/* <td className="px-1 sm:px-2 lg:px-4 py-3 whitespace-nowrap text-sm font-medium space-x-1">
                         <button
                           onClick={() => {
                             setSelectedEditId(p.id);
@@ -371,7 +432,7 @@ export default function Estoque() {
                         >
                           📦
                         </button>
-                      </td>
+                      </td> */}
                     </tr>
                   ))}
                 </tbody>

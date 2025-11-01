@@ -1,10 +1,11 @@
+// src/app/(admin)/clientes/[id]/page.js
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { formatDateToBrazil } from '../../../utils/formatDate';
-import { formatPhoneNumber } from '../../../utils/formatPhoneNumber';
+import { formatDateToBrazil } from '@/utils/formatDate';
+import { formatPhoneNumber } from '@/utils/formatPhoneNumber';
 import toast from 'react-hot-toast';
 import { User, DollarSign, CreditCard, ShoppingBag, Calendar, Edit3, Eye, Users, MapPin, Phone as PhoneIcon } from 'lucide-react';
 import PageHeader from '@/components/layout/Header';
@@ -145,7 +146,7 @@ export default function DetalhesCliente() {
     setEditBairro(originalValues.bairro);
     setEditRua(originalValues.rua);
     setIsEditing(false);
-    toast.info('Edição cancelada');
+toast.error('Edição cancelada', { duration: 2000 });
   };
 
   const getValorPago = (venda) => {
@@ -303,45 +304,107 @@ export default function DetalhesCliente() {
                 </div>
               </>
             ) : (
-              <div className="md:col-span-2 space-y-4">
+              <div className="md:col-span-2 space-y-4 text-gray-500">
+                {/* NOME */}
                 <div className="relative">
-                  <input type="text" value={editNome} onChange={(e) => setEditNome(e.target.value)} required
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#394189] focus:border-transparent transition-all" />
-                  <label className="absolute left-4 top-3 text-xs text-gray-500 transition-all">Nome *</label>
+                  <input
+                    type="text"
+                    value={editNome}
+                    onChange={(e) => setEditNome(e.target.value)}
+                    required
+                    className="peer w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#394189] focus:border-transparent transition-all placeholder-transparent"
+                    placeholder=" "
+                  />
+                  <label className="absolute left-4 -top-2.5 px-1 text-xs text-gray-500 bg-white transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#394189]">
+                    Nome *
+                  </label>
                 </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* APELIDO */}
                   <div className="relative">
-                    <input type="text" value={editApelido} onChange={(e) => setEditApelido(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#394189] focus:border-transparent transition-all" />
-                    <label className="absolute left-4 top-3 text-xs text-gray-500 transition-all">Apelido</label>
+                    <input
+                      type="text"
+                      value={editApelido}
+                      onChange={(e) => setEditApelido(e.target.value)}
+                      className="peer w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#394189] focus:border-transparent transition-all placeholder-transparent"
+                      placeholder=" "
+                    />
+                    <label className="absolute left-4 -top-2.5 px-1 text-xs text-gray-500 bg-white transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#394189]">
+                      Apelido
+                    </label>
                   </div>
+
+                  {/* TELEFONE */}
                   <div className="relative">
-                    <input type="text" value={editTelefone} onChange={(e) => setEditTelefone(formatPhoneNumber(e.target.value))}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#394189] focus:border-transparent transition-all" />
-                    <label className="absolute left-4 top-3 text-xs text-gray-500 transition-all">Telefone</label>
+                    <input
+                      type="text"
+                      value={editTelefone}
+                      onChange={(e) => setEditTelefone(formatPhoneNumber(e.target.value))}
+                      className="peer w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#394189] focus:border-transparent transition-all placeholder-transparent"
+                      placeholder=" "
+                    />
+                    <label className="absolute left-4 -top-2.5 px-1 text-xs text-gray-500 bg-white transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#394189]">
+                      Telefone
+                    </label>
                   </div>
                 </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* DATA NASCIMENTO */}
                   <div className="relative">
-                    <input type="date" value={editDataNascimento} onChange={(e) => setEditDataNascimento(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#394189] focus:border-transparent transition-all" />
-                    <label className="absolute left-4 top-3 text-xs text-gray-500 transition-all">Data Nascimento</label>
+                    <input
+                      type="date"
+                      value={editDataNascimento}
+                      onChange={(e) => setEditDataNascimento(e.target.value)}
+                      className="peer w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#394189] focus:border-transparent transition-all"
+                    />
+                    <label className="absolute left-4 -top-2.5 px-1 text-xs text-gray-500 bg-white transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#394189]">
+                      Data Nascimento
+                    </label>
                   </div>
+
+                  {/* CIDADE */}
                   <div className="relative">
-                    <input type="text" value={editCidade} onChange={(e) => setEditCidade(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#394189] focus:border-transparent transition-all" />
-                    <label className="absolute left-4 top-3 text-xs text-gray-500 transition-all">Cidade</label>
+                    <input
+                      type="text"
+                      value={editCidade}
+                      onChange={(e) => setEditCidade(e.target.value)}
+                      className="peer w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#394189] focus:border-transparent transition-all placeholder-transparent"
+                      placeholder=" "
+                    />
+                    <label className="absolute left-4 -top-2.5 px-1 text-xs text-gray-500 bg-white transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#394189]">
+                      Cidade
+                    </label>
                   </div>
+
+                  {/* BAIRRO */}
                   <div className="relative">
-                    <input type="text" value={editBairro} onChange={(e) => setEditBairro(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#394189] focus:border-transparent transition-all" />
-                    <label className="absolute left-4 top-3 text-xs text-gray-500 transition-all">Bairro</label>
+                    <input
+                      type="text"
+                      value={editBairro}
+                      onChange={(e) => setEditBairro(e.target.value)}
+                      className="peer w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#394189] focus:border-transparent transition-all placeholder-transparent"
+                      placeholder=" "
+                    />
+                    <label className="absolute left-4 -top-2.5 px-1 text-xs text-gray-500 bg-white transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#394189]">
+                      Bairro
+                    </label>
                   </div>
                 </div>
+
+                {/* RUA */}
                 <div className="relative">
-                  <input type="text" value={editRua} onChange={(e) => setEditRua(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#394189] focus:border-transparent transition-all" />
-                  <label className="absolute left-4 top-3 text-xs text-gray-500 transition-all">Rua/Endereço</label>
+                  <input
+                    type="text"
+                    value={editRua}
+                    onChange={(e) => setEditRua(e.target.value)}
+                    className="peer w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#394189] focus:border-transparent transition-all placeholder-transparent"
+                    placeholder=" "
+                  />
+                  <label className="absolute left-4 -top-2.5 px-1 text-xs text-gray-500 bg-white transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#394189]">
+                    Rua/Endereço
+                  </label>
                 </div>
               </div>
             )}
