@@ -2,15 +2,80 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient(); // Singleton recomendado: mova pra lib/prisma.js em prod
 
+// function calcularMetricas(vendas = []) {
+//   // ... (mesma função de antes, sem mudanças)
+//   const totalGasto = vendas.reduce((sum, venda) => sum + (parseFloat(venda.valorTotal) || 0), 0);
+//   const totalPago = vendas.reduce((sum, venda) => {
+//     const entrada = parseFloat(venda.entrada) || 0;
+//     const parcelasPagas = (venda.parcelas || []).reduce((sumP, p) => sumP + (parseFloat(p.valorPago) || 0), 0);
+//     return sum + entrada + parcelasPagas;
+//   }, 0);
+//   const totalPendente = totalGasto - totalPago;
+//   const numeroCompras = vendas.length;
+
+//   const produtosComprados = vendas.reduce((acc, venda) => {
+//     const produto = venda.produto?.nome || 'Desconhecido';
+//     acc[produto] = (acc[produto] || 0) + (venda.quantidade || 0);
+//     return acc;
+//   }, {});
+//   const produtosFavoritos = Object.entries(produtosComprados)
+//     .map(([nome, quantidade]) => ({ nome, quantidade }))
+//     .sort((a, b) => b.quantidade - a.quantidade)
+//     .slice(0, 3);
+
+//   const hoje = new Date();
+//   const parcelasAtrasadas = vendas
+//     .flatMap((venda) => venda.parcelas || [])
+//     .filter((parcela) => !parcela.pago && parcela.dataVencimento && new Date(parcela.dataVencimento) < hoje).length;
+
+//   const seisMesesAtras = new Date();
+//   seisMesesAtras.setMonth(seisMesesAtras.getMonth() - 6);
+//   const comprasRecentes = vendas.filter((venda) => venda.dataVenda && new Date(venda.dataVenda) >= seisMesesAtras).length;
+//   const frequenciaCompras = comprasRecentes <= 1 ? 'BAIXA' : comprasRecentes <= 5 ? 'MEDIA' : 'ALTA';
+
+//   return {
+//     totalGasto: totalGasto.toFixed(2),
+//     totalPago: totalPago.toFixed(2),
+//     totalPendente: totalPendente.toFixed(2),
+//     numeroCompras,
+//     produtosFavoritos,
+//     parcelasAtrasadas,
+//     frequenciaCompras,
+//   };
+// }
+
 function calcularMetricas(vendas = []) {
-  // ... (mesma função de antes, sem mudanças)
-  const totalGasto = vendas.reduce((sum, venda) => sum + (parseFloat(venda.valorTotal) || 0), 0);
+  // ---------- 1. VALORES BRUTOS (o que o cliente deve) ----------
+  const totalGasto = vendas.reduce((sum, venda) => {
+    // valorTotal já é o bruto (R$ 120.99)
+    return sum + (parseFloat(venda.valorTotal) || 0);
+  }, 0);
+
+  // ---------- 2. VALOR PAGO PELO CLIENTE ----------
+  // Quando a venda está quitada usamos o próprio valorTotal (bruto)
+  // Caso contrário somamos entrada + parcelas pagas
   const totalPago = vendas.reduce((sum, venda) => {
+    if (venda.status === 'QUITADO') {
+      return sum + (parseFloat(venda.valorTotal) || 0);
+    }
+
     const entrada = parseFloat(venda.entrada) || 0;
-    const parcelasPagas = (venda.parcelas || []).reduce((sumP, p) => sumP + (parseFloat(p.valorPago) || 0), 0);
+    const parcelasPagas = (venda.parcelas || []).reduce(
+      (s, p) => s + (parseFloat(p.valorPago) || 0),
+      0
+    );
     return sum + entrada + parcelasPagas;
   }, 0);
-  const totalPendente = totalGasto - totalPago;
+
+  // ---------- 3. TAXA DO CARTÃO (custo da loja) ----------
+  const taxaCartao = vendas.reduce((sum, venda) => {
+    // Se houver campo `valorLiquido` use a diferença; caso contrário 0
+    const bruto = parseFloat(venda.valorTotal) || 0;
+    const liquido = parseFloat(venda.valorLiquido) || bruto;
+    return sum + (bruto - liquido);
+  }, 0);
+
+  // ---------- 4. OUTRAS MÉTRICAS (mantidas) ----------
   const numeroCompras = vendas.length;
 
   const produtosComprados = vendas.reduce((acc, venda) => {
@@ -19,24 +84,29 @@ function calcularMetricas(vendas = []) {
     return acc;
   }, {});
   const produtosFavoritos = Object.entries(produtosComprados)
-    .map(([nome, quantidade]) => ({ nome, quantidade }))
+    .map(([nome, qtd]) => ({ nome, quantidade: qtd }))
     .sort((a, b) => b.quantidade - a.quantidade)
     .slice(0, 3);
 
   const hoje = new Date();
   const parcelasAtrasadas = vendas
-    .flatMap((venda) => venda.parcelas || [])
-    .filter((parcela) => !parcela.pago && parcela.dataVencimento && new Date(parcela.dataVencimento) < hoje).length;
+    .flatMap(v => v.parcelas || [])
+    .filter(p => !p.pago && p.dataVencimento && new Date(p.dataVencimento) < hoje)
+    .length;
 
   const seisMesesAtras = new Date();
   seisMesesAtras.setMonth(seisMesesAtras.getMonth() - 6);
-  const comprasRecentes = vendas.filter((venda) => venda.dataVenda && new Date(venda.dataVenda) >= seisMesesAtras).length;
-  const frequenciaCompras = comprasRecentes <= 1 ? 'BAIXA' : comprasRecentes <= 5 ? 'MEDIA' : 'ALTA';
+  const comprasRecentes = vendas.filter(
+    v => v.dataVenda && new Date(v.dataVenda) >= seisMesesAtras
+  ).length;
+  const frequenciaCompras =
+    comprasRecentes <= 1 ? 'BAIXA' : comprasRecentes <= 5 ? 'MEDIA' : 'ALTA';
 
   return {
     totalGasto: totalGasto.toFixed(2),
     totalPago: totalPago.toFixed(2),
-    totalPendente: totalPendente.toFixed(2),
+    totalPendente: (totalGasto - totalPago).toFixed(2), // agora será 0 se quitado
+    taxaCartao: taxaCartao.toFixed(2),                 // novo campo
     numeroCompras,
     produtosFavoritos,
     parcelasAtrasadas,
@@ -62,19 +132,20 @@ export async function getClienteById(id) {
 
   if (!cliente) throw new Error('Cliente não encontrado');
 
-  const metricas = calcularMetricas(cliente.vendas);
-  return {
-    ...cliente,
-    frequenciaCompras: metricas.frequenciaCompras,
-    metricas: {
-      totalGasto: metricas.totalGasto,
-      totalPago: metricas.totalPago,
-      totalPendente: metricas.totalPendente,
-      numeroCompras: metricas.numeroCompras,
-      produtosFavoritos: metricas.produtosFavoritos,
-      parcelasAtrasadas: metricas.parcelasAtrasadas,
-    },
-  };
+const metricas = calcularMetricas(cliente.vendas);
+return {
+  ...cliente,
+  frequenciaCompras: metricas.frequenciaCompras,
+  metricas: {
+    totalGasto: metricas.totalGasto,
+    totalPago: metricas.totalPago,
+    totalPendente: metricas.totalPendente,
+    taxaCartao: metricas.taxaCartao,          // <-- novo
+    numeroCompras: metricas.numeroCompras,
+    produtosFavoritos: metricas.produtosFavoritos,
+    parcelasAtrasadas: metricas.parcelasAtrasadas,
+  },
+};
 }
 
 export async function updateCliente(id, data) {

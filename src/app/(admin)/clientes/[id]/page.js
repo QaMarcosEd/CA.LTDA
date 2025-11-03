@@ -185,6 +185,7 @@ toast.error('Edição cancelada', { duration: 2000 });
             { icon: CreditCard, label: 'Total Pago', value: `R$ ${cliente.metricas.totalPago?.toLocaleString('pt-BR') || '0,00'}`, color: '#10B981' },
             { icon: ShoppingBag, label: 'Compras', value: cliente.metricas.numeroCompras || 0, color: '#394189' },
             { icon: DollarSign, label: 'Pendente', value: `R$ ${cliente.metricas.totalPendente?.toLocaleString('pt-BR') || '0,00'}`, color: '#F59E0B' },
+            { icon: CreditCard, label: 'Taxa do Cartão', value: `R$ ${cliente.metricas.taxaCartao || '0,00'}`, color: '#6B7280'},
             { icon: Calendar, label: 'Atrasadas', value: cliente.metricas.parcelasAtrasadas || 0, color: '#EF4444' },
             { icon: Users, label: 'Favoritos', value: cliente.metricas.produtosFavoritos?.length || 0, color: '#8B5CF6' },
           ].map((card, i) => (
@@ -428,8 +429,8 @@ toast.error('Edição cancelada', { duration: 2000 });
                     <tr key={v.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                       <td className="py-4 px-4 font-medium text-gray-900">{v.produto.nome}</td>
                       <td className="py-4 px-4 text-sm text-[#10B981]">{v.quantidade}</td>
-                      <td className="py-4 px-4 text-sm text-[#c33638]">R$ {getValorPago(v)}</td>
-                      <td className="py-4 px-4 text-sm font-semibold">R$ {v.valorTotal.toFixed(2)}</td>
+                      <td className="py-4 px-4 text-sm text-[#c33638]">R$ {v.status === 'QUITADO' ? v.valorTotal.toFixed(2) : getValorPago(v)}</td>
+                      <td className="py-4 px-4 text-sm font-semibold text-gray-600">R$ {v.valorTotal.toFixed(2)}</td>
                       <td className="py-4 px-4 text-sm text-gray-600">{v.formaPagamento?.replace('CARTAO_', '').replace('_', ' ').toLowerCase() || 'N/A'}</td>
                       <td className="py-4 px-4">
                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
