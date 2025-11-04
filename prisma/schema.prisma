@@ -7,27 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Genero {
-  MASCULINO
-  FEMININO
-  INFANTIL_MASCULINO
-  INFANTIL_FEMININO
-}
-
-enum Modelo {
-  TENIS
-  SAPATENIS
-  SANDALIA
-  RASTEIRA
-  TAMANCO
-  SCARPIN
-  BOTA
-  CHINELO
-  MOCASSIM
-  PAPETE
-  CHUTEIRA
-}
-
 model Cliente {
   id           Int      @id @default(autoincrement())
   nome         String   @unique
@@ -97,14 +76,8 @@ model Produto {
   vendas           Venda[]
   lote             String?
   dataRecebimento  DateTime
-}
 
-model TaxaCartao {
-  id             Int     @id @default(autoincrement())
-  bandeira       String  // Ex.: 'VISA', 'MASTERCARD', 'ELO'
-  modalidade     String  // Ex.: 'DEBITO', 'CREDITO_A_VISTA', '2_3X', '4_6X'
-  taxaPercentual Float   // Ex.: 1.99 para 1,99%
-  @@unique([bandeira, modalidade]) // Evita duplicatas
+  createdAt       DateTime @default(now())
 }
 
 enum Role {
@@ -120,4 +93,46 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model TaxaCartao {
+  id            Int      @id @default(autoincrement())
+  bandeira      String
+  modalidade    String
+  taxaPercentual Float
+
+  historico     TaxaCartaoHistorico[] @relation("TaxaCartaoHistorico")
+
+  @@unique([bandeira, modalidade])
+}
+
+model TaxaCartaoHistorico {
+  id            Int      @id @default(autoincrement())
+  taxaCartaoId  Int
+  bandeira      String
+  modalidade    String
+  taxaAntiga    Float
+  taxaNova      Float
+  alteradoPor   String?
+  alteradoEm    DateTime @default(now())
+
+  taxaCartao    TaxaCartao @relation("TaxaCartaoHistorico", fields: [taxaCartaoId], references: [id])
+}
+
+// ENUMS
+enum BandeiraCartao {
+  VISA
+  MASTERCARD
+  ELO
+  CIELO
+}
+
+enum ModalidadeCartao {
+  DEBITO
+  CREDITO_X1
+  CREDITO_X2
+  CREDITO_X3
+  CREDITO_X4
+  CREDITO_X5
+  CREDITO_X6
 }
