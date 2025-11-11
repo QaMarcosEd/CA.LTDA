@@ -15,7 +15,7 @@ scripts/
 
 # Ignora arquivo na raiz
 seed-produtos.js
-prisma/seed.js
+# prisma/seed.js
 
 # testing
 /coverage

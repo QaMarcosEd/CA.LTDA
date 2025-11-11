@@ -177,7 +177,6 @@ export async function createVenda(data) {
     console.error('Erro ao registrar venda:', error);
     return { status: 500, data: { error: 'Erro ao registrar venda', details: error.message } };
   }
-  // REMOVIDO: finally { await prisma.$disconnect(); }
 }
 
 // === LISTAR VENDAS POR PRODUTO ===
