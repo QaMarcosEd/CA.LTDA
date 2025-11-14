@@ -7,7 +7,7 @@ import { getProdutoById, updateProduto, deleteProduto } from '../controller/prod
 const requireAdmin = async () => {
   const session = await getServerSession(authOptions);
   if (!session?.user) throw new Error('Não autenticado');
-  if (session.user.role !== 'admin') throw new Error('Acesso negado. Apenas administradores.');
+  if (session.user.role !== 'ADMIN') throw new Error('Acesso negado. Apenas administradores.');
   return session.user;
 };
 
@@ -35,7 +35,7 @@ export async function PUT(request, { params }) {
   try {
     await requireAdmin(); // Só admin
 
-    const { id } = params;
+    const { id } = await params;
     if (!id || isNaN(parseInt(id))) {
       return NextResponse.json({ error: 'ID inválido' }, { status: 400 });
     }
@@ -51,28 +51,11 @@ export async function PUT(request, { params }) {
   }
 }
 
-// export async function DELETE(request, { params }) {
-//   try {
-//     await requireAdmin(); // Só admin
-
-//     const { id } = params;
-//     if (!id || isNaN(parseInt(id))) {
-//       return NextResponse.json({ error: 'ID inválido' }, { status: 400 });
-//     }
-
-//     const result = await deleteProduto(parseInt(id));
-//     return NextResponse.json(result.data, { status: result.status });
-//   } catch (error) {
-//     const status = error.message.includes('vinculado') ? 409 : 500;
-//     return NextResponse.json({ error: error.message }, { status });
-//   }
-// }
-
 export async function DELETE(request, { params }) {
   try {
     await requireAdmin(); // Só admin
 
-    const { id } = params;
+    const { id } = await params;
     if (!id || isNaN(parseInt(id))) {
       return NextResponse.json(
         { error: 'ID inválido' },

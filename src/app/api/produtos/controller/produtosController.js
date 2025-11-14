@@ -1,5 +1,5 @@
 // app/api/produtos/controller/produtosController.js
-import { prisma } from '../../../lib/prisma'; // Singleton global
+import { prisma } from '../../../lib/prisma';
 
 export async function getAllProdutos({ marca, modelo, genero, tamanho, referencia, tipo, page = 1, limit = 10 }) {
   try {
@@ -176,36 +176,37 @@ export async function getProdutoById(id) {
 
 export async function updateProduto(data) {
   try {
-    const id = parseInt(data.id);
-    if (isNaN(id)) throw new Error('ID inválido');
-    const dataRecebimento = data.dataRecebimento ? new Date(data.dataRecebimento) : undefined;
-    if (dataRecebimento && isNaN(dataRecebimento.getTime())) throw new Error('Data de recebimento inválida');
-    const precoVenda = parseFloat(data.precoVenda) || 0;
-    const precoCusto = parseFloat(data.precoCusto) || 0;
-    if (precoVenda < 0 || precoCusto < 0) throw new Error('Preços inválidos');
+    const produtoId = parseInt(data.id);
+    if (isNaN(produtoId)) throw new Error('ID inválido');
+
+    const quantidade = parseInt(data.quantidade);
+    if (isNaN(quantidade) || quantidade < 0) throw new Error('Quantidade inválida');
+
     const produto = await prisma.produto.update({
-      where: { id },
+      where: { id: produtoId },
       data: {
         nome: data.nome,
         tamanho: parseInt(data.tamanho),
         referencia: data.referencia,
         cor: data.cor,
-        quantidade: parseInt(data.quantidade),
-        precoVenda,
-        precoCusto,
+        quantidade,
+        precoVenda: parseFloat(data.precoVenda),
+        precoCusto: parseFloat(data.precoCusto) || null,
         genero: data.genero,
         modelo: data.modelo,
         marca: data.marca,
-        disponivel: parseInt(data.quantidade) > 0,
+        disponivel: quantidade > 0,
         lote: data.lote || null,
-        dataRecebimento,
+        dataRecebimento: data.dataRecebimento ? new Date(data.dataRecebimento) : undefined,
         imagem: data.imagem || null,
       },
     });
+
     return { status: 200, data: produto };
   } catch (error) {
     console.error('Erro ao atualizar produto:', error);
-    throw error;
+    if (error.code === 'P2025') throw new Error('Produto não encontrado');
+    throw new Error(`Erro ao atualizar: ${error.message}`);
   }
 }
 
@@ -213,11 +214,16 @@ export async function deleteProduto(id) {
   try {
     const produtoId = parseInt(id);
     if (isNaN(produtoId)) throw new Error('ID inválido');
-    await prisma.produto.delete({ where: { id: produtoId } });
+
+    await prisma.produto.delete({
+      where: { id: produtoId },
+    });
+
     return { status: 200, data: { message: 'Produto deletado com sucesso' } };
   } catch (error) {
     console.error('Erro ao deletar produto:', error);
-    if (error.code === 'P2003') throw new Error('Não é possível deletar o produto porque ele está vinculado a uma venda.');
-    throw error;
+    if (error.code === 'P2025') throw new Error('Produto não encontrado');
+    if (error.code === 'P2003') throw new Error('Não é possível deletar: produto vinculado a uma venda.');
+    throw new Error(`Erro ao deletar: ${error.message}`);
   }
 }

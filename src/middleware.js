@@ -53,6 +53,6 @@ export const config = {
     '/vendas/:path*',
     '/produtos/:path*',
     '/api/:path*',
-    '/vitrine/:path*'  // ← ADICIONADO! LIBERADO
+    '/vitrine/:path*'
   ]
 }
